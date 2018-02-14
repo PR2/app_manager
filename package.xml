@@ -1,6 +1,6 @@
 <package>
   <name>app_manager</name>
-  <version>1.0.4</version>
+  <version>1.0.5</version>
   <description>app_manager</description>
   <maintainer email="ros-orphaned-packages@googlegroups.com">ROS Orphaned Package Maintainers</maintainer>
 
