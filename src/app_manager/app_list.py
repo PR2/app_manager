@@ -127,6 +127,13 @@ class InstalledFile(object):
             self._load()
             self._file_mtime = s.st_mtime
 
+    def get_available_apps(self, platform=None):
+        if platform is not None:
+            return filter(lambda app: app.platform == platform,
+                          self.available_apps)
+        else:
+            return self.available_apps
+
     def __eq__(self, other):
         return self.filename == other.filename
 
@@ -135,10 +142,11 @@ class InstalledFile(object):
 
 
 class AppList(object):
-    def __init__(self, applist_directories):
+    def __init__(self, applist_directories, platform=None):
         self.applist_directories = applist_directories
         self.installed_files = {}
         self.app_list = []
+        self.platform = platform
 
         self._applist_directory_mtime = None
         self.need_update = True
@@ -169,7 +177,7 @@ class AppList(object):
                     installed_file = InstalledFile(f)
                     self.installed_files[f] = installed_file
                 installed_file.update()
-                app_list.extend(installed_file.available_apps)
+                app_list.extend(installed_file.get_available_apps(platform=self.platform))
                 rospy.loginfo("%d apps found in %s" % (len(installed_file.available_apps), installed_file.filename))
             except AppException as e:
                 rospy.logerr("ERROR: %s" % (str(e)))

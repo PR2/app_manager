@@ -48,10 +48,16 @@ def main():
             parser.error("--applist option is not specified, but loading from plugin definition failed.")
 
     robot_name = rospy.get_param('/robot/name', 'robot')
+    robot_type = rospy.get_param("/robot/type", None)
+    if robot_type is None:
+        rospy.loginfo("The param '/robot/type' is undefined. Using apps for any platforms")
+    else:
+        rospy.loginfo("Using apps for platform '%s'" % robot_type)
+
     interface_master = rospy.get_param('~interface_master', 'http://localhost:11312')
 
     try:
-        app_list = app_manager.AppList(applist)
+        app_list = app_manager.AppList(applist, platform=robot_type)
     except app_manager.AppException as e:
         print >> sys.stderr, "Failed to load app list: %s"%(str(e))
         sys.exit(1)

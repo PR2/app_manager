@@ -55,10 +55,17 @@ rosrun app_manager app_manager
 
 `app_manager` node automatically searches all `.installed` files and register as available applications.
 
+Applications can be filtered by platform defined in each `.app` file.
+If you set the parameter `/robot/type` to `pr2`, then apps for platform `pr2` will be available.
+
+```bash
+rosparam set /robot/type pr2
+```
+
 
 ## APIs
 
-All topics/services are advertised under the `robot` namespace.
+All topics/services are advertised under the namespace specified by the parameter `/robot/name`.
 
 ### Publishing Topics
 
