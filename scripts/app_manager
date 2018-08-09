@@ -4,40 +4,54 @@
 usage: %prog [args]
 """
 
-import roslib
-roslib.load_manifest('app_manager')
 import rospkg
 
 import os
 import sys
 import string
-from optparse import OptionParser
+from argparse import ArgumentParser
+import subprocess
 
 import app_manager
 import rospy
 
-def main(argv, stdout, environ):
-
-    args = rospy.myargv()
-    parser = OptionParser()
-
-    applist_default = app_manager.get_default_applist_directory()
-    
-    parser.add_option("--applist", dest="applist_directory",
-                      default=applist_default,
-                      help="path to applist directories, semi-colon delimited", metavar="PATH")
-    options, args = parser.parse_args(args)
-    for i in options.applist_directory.split(';'):
-        if not os.path.exists(i):
-            parser.error("applist directory [%s] does not exist.\nUse --applist to set the correct location"%(i))
-    
+def main():
     rospy.init_node('app_manager')
+
+    argv = rospy.myargv()
+    parser = ArgumentParser()
+
+    parser.add_argument("--applist", default=None, nargs="*",
+                        help="path to applist directories", metavar="PATH")
+    args = parser.parse_args(argv[1:])
+
+    applist = []
+    if args.applist is not None:
+        rospy.loginfo("Loading applist from --applist option")
+        for path in args.applist:
+            if not os.path.exists(path):
+                parser.error("applist directory [%s] does not exist.\nUse --applist to set the correct location" % (path))
+        applist = args.applist
+    else:
+        rospy.loginfo("Loading from plugin definitions")
+        try:
+            out = subprocess.check_output(["rospack", "plugins", "--attrib=app_dir", "app_manager"]).strip()
+            if not out:
+                parser.error("No app directory found")
+            lines = out.split(os.linesep)
+            for line in lines:
+                pkg, app_dir = line.strip().split()
+                if not os.path.exists(app_dir):
+                    parser.error("In package '%s', app_dir '%s' does not exist. Maybe forgot to start with ${prefix}?" % (pkg, app_dir))
+                applist.append(app_dir)
+        except subprocess.CalledProcessError:
+            parser.error("--applist option is not specified, but loading from plugin definition failed.")
 
     robot_name = rospy.get_param('/robot/name', 'robot')
     interface_master = rospy.get_param('~interface_master', 'http://localhost:11312')
 
     try:
-        app_list = app_manager.AppList(options.applist_directory.split(";"))
+        app_list = app_manager.AppList(applist)
     except app_manager.AppException as e:
         print >> sys.stderr, "Failed to load app list: %s"%(str(e))
         sys.exit(1)
@@ -55,7 +69,7 @@ def main(argv, stdout, environ):
         except app_manager.AppException as e:
             print >> sys.stderr, "Failed to load exchange: %s"%(str(e))
             sys.exit(1)
-    
+
     am = app_manager.AppManager(robot_name, interface_master, app_list, exchange)
 
     rospy.on_shutdown(am.shutdown)
@@ -65,4 +79,4 @@ def main(argv, stdout, environ):
 
 
 if __name__ == "__main__":
-    main(sys.argv, sys.stdout, os.environ)
+    main()

@@ -11,6 +11,7 @@
 
   <author>Jeremy Leibs</author>
   <author>Ken Conley</author>
+  <author>Yuki Furuta</author>
 
   <buildtool_depend>catkin</buildtool_depend>
 
@@ -21,6 +22,7 @@
   <build_depend>message_generation</build_depend>
 
   <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>rospack</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>roslaunch</run_depend>
   <run_depend>rosgraph</run_depend>
