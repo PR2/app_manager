@@ -77,6 +77,7 @@ All topics/services are advertised under the namespace specified by the paramete
 - `list_apps`: List available/running applications
 - `start_app`: Start an available application
 - `stop_app`: Stop a runniing application
+- `reload_app_list`: Reload installed applications from `*.installed`) file.
 
 
 ## Maintainer

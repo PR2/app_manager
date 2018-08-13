@@ -43,6 +43,8 @@ import rospy
 import roslaunch.parent
 import roslaunch.pmon
 
+from std_srvs.srv import Empty, EmptyResponse
+
 from .app import AppDefinition, load_AppDefinition_by_name
 from .exceptions import LaunchException, AppException, InvalidAppException, NotFoundException
 from .master_sync import MasterSync
@@ -73,6 +75,7 @@ class AppManager(object):
         self._list_apps_srv  = rospy.Service(self.scoped_name('list_apps'),  ListApps,  self.handle_list_apps)
         self._start_app_srv = rospy.Service(self.scoped_name('start_app'), StartApp, self.handle_start_app)
         self._stop_app_srv   = rospy.Service(self.scoped_name('stop_app'),   StopApp,   self.handle_stop_app)
+        self._reload_app_list_srv = rospy.Service(self.scoped_name('reload_app_list'), Empty, self.handle_reload_app_list)
         if (self._exchange):
             self._exchange_list_apps_pub = rospy.Publisher(self.scoped_name('exchange_app_list'), AppInstallationState, latch=True)
             self._list_exchange_apps_srv = rospy.Service(self.scoped_name('list_exchange_apps'), GetInstallationState, self.handle_list_exchange_apps)
@@ -257,6 +260,16 @@ class AppManager(object):
     def handle_stop_app(self, req):
         rospy.loginfo("handle stop app: %s"%(req.name))
         return self.stop_app(req.name)
+
+    def handle_reload_app_list(self, req=None):
+        try:
+            self._app_list.update()
+            self.publish_list_apps()
+            self.publish_exchange_list_apps()
+            rospy.loginfo("app list is reloaded")
+        except Exception as e:
+            rospy.logerr("Failed to reload app list: %s" % e)
+        return EmptyResponse()
 
     def app_monitor(self):
         while self._launch:
