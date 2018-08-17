@@ -63,8 +63,12 @@ class AppManager(object):
         self._app_interface = self.scoped_name('application')
 
         # note: we publish into the application namespace
-        self._status_pub = rospy.Publisher(self.scoped_name('application/app_status'), AppStatus, latch=True)
-        self._list_apps_pub = rospy.Publisher(self.scoped_name('app_list'), AppList, latch=True)
+        self._status_pub = rospy.Publisher(
+            self.scoped_name('application/app_status'), AppStatus,
+            latch=True, queue_size=1)
+        self._list_apps_pub = rospy.Publisher(
+            self.scoped_name('app_list'), AppList,
+            latch=True, queue_size=1)
         
         self._list_apps_srv  = rospy.Service(self.scoped_name('list_apps'),  ListApps,  self.handle_list_apps)
         self._start_app_srv = rospy.Service(self.scoped_name('start_app'), StartApp, self.handle_start_app)
