@@ -40,12 +40,13 @@ currently installed applications.
 """
 
 import os
+import rospy
 import sys
 import yaml
 
 from .app import load_AppDefinition_by_name
 from .msg import App, ClientApp, KeyValue, Icon
-from .exceptions import AppException, InvalidAppException
+from .exceptions import AppException, InvalidAppException, NotFoundException
 
 def get_default_applist_directory():
     """
@@ -58,7 +59,7 @@ def dict_to_KeyValue(d):
     for k, v in d.iteritems():
         l.append(KeyValue(k, str(v)))
     return l
-        
+
 def read_Icon_file(filename):
     icon = Icon()
     if filename == None or filename == "":
@@ -88,14 +89,13 @@ class InstalledFile(object):
     Models data stored in a .installed file.  These files are used to
     track installation of apps.
     """
-    
+
     def __init__(self, filename):
         self.filename = filename
         # list of App
         self.available_apps = []
 
         self._file_mtime = None
-        self.update()
 
     def _load(self):
         available_apps = []
@@ -108,8 +108,14 @@ class InstalledFile(object):
                 for areqd in ['app']:
                     if not areqd in app:
                         raise InvalidAppException("installed file [%s] app definition is missing required key [%s]"%(self.filename, areqd))
-                available_apps.append(load_AppDefinition_by_name(app['app']))
-                
+                try:
+                    available_apps.append(load_AppDefinition_by_name(app['app']))
+                except NotFoundException as e:
+                    rospy.logerr(e)
+                    continue
+                except Exception as e:
+                    raise e
+
         self.available_apps = available_apps
 
     def update(self):
@@ -120,86 +126,91 @@ class InstalledFile(object):
         if s.st_mtime != self._file_mtime:
             self._load()
             self._file_mtime = s.st_mtime
-    
+
+    def get_available_apps(self, platform=None):
+        if platform is not None:
+            return filter(lambda app: app.platform == platform,
+                          self.available_apps)
+        else:
+            return self.available_apps
+
+    def __eq__(self, other):
+        return self.filename == other.filename
+
+    def __neq__(self, other):
+        return not self.__eq__(other)
+
+
 class AppList(object):
-    
-    def __init__(self, applist_directories):
+    def __init__(self, applist_directories, platform=None):
         self.applist_directories = applist_directories
         self.installed_files = {}
-        self.invalid_installed_files = []
         self.app_list = []
-        
-        self._applist_directory_mtime = None
-        self.update()
-        
-    def _load(self):
-        app_list = []
-        invalid_installed_files = []
-        
-        dir_list = [] 
-        for i in self.applist_directories:
-            for k in os.listdir(i):
-                dir_list.append(k)
-            
-        
-        for f in set(self.installed_files.keys()) - set(dir_list):
-            print "deleting installation data for [%s]"%(f)
-            del self.installed_files[f]
-        
-        for i in self.applist_directories:
-            for f in os.listdir(i):
-                print f
-                if not f.endswith('.installed'):
-                    continue
-                try:
-                    if f in self.installed_files:
-                        installed_file = self.installed_files[f]
-                        installed_file.update()
-                    else:
-                        print "loading installation data for [%s]"%(f)
-                        filename = os.path.join(i, f)
-                        installed_file = InstalledFile(filename)
-                        self.installed_files[f] = installed_file
-                    
-                    app_list.extend(installed_file.available_apps)
+        self.platform = platform
 
-                except AppException as ae:
-                    print >> sys.stderr, "ERROR: %s"%(str(ae))
-                    invalid_installed_files.append((filename, ae))
-                except Exception as e:
-                    print >> sys.stderr, "ERROR: %s"%(str(e))
-                    invalid_installed_files.append((filename, e))
+        self._applist_directory_mtime = None
+        self.need_update = True
+
+    def _find_installed_files(self):
+        installed_files = []
+        for d in self.applist_directories:
+            for f in os.listdir(d):
+                if f.endswith(".installed"):
+                    full_path = os.path.abspath(os.path.join(d, f))
+                    installed_files.append(full_path)
+        return installed_files
+
+    def _load(self, files):
+        if files:
+            installed_files = files
+        else:
+            installed_files = self.installed_files.keys()
+        invalid_installed_files = []
+        app_list = []
+        for f in installed_files:
+            try:
+                if f in self.installed_files:
+                    # update InstalledFile object
+                    installed_file = self.installed_files[f]
+                else:
+                    # new installed file
+                    installed_file = InstalledFile(f)
+                    self.installed_files[f] = installed_file
+                installed_file.update()
+                app_list.extend(installed_file.get_available_apps(platform=self.platform))
+                rospy.loginfo("%d apps found in %s" % (len(installed_file.available_apps), installed_file.filename))
+            except AppException as e:
+                rospy.logerr("ERROR: %s" % (str(e)))
+            except Exception as e:
+                rospy.logerr("ERROR: %s" % (str(e)))
 
         self.app_list = app_list
-        self.invalid_installed_files = invalid_installed_files
-        
+
     def get_app_list(self):
+        if not self.app_list:
+            self.update()
         return [AppDefinition_to_App(ad) for ad in self.app_list]
-    
+
     def add_directory(self, directory):
+        if not os.path.exists(directory):
+            raise IOError("applist directory %s does not exist." % directory)
+        if directory in self.applist_directory:
+            raise RuntimeError("applist directory %s already exists" % directory)
         self.applist_directories.append(directory)
+        self.need_update = True
+
+    def remove_directory(self, directory):
+        if directory not in self.applist_directory:
+            raise RuntimeError("applist directory %s does not in list" % directory)
+        self.applist_directory.remove(directory)
+        self.need_update = True
 
     def update(self):
         """
         Update app list
         """
-        
-        bad = True
-        #TODO: this detects when the directories are actually modified.
-        #It does not work because os.stat(i).st_mtime does not change if
-        #only a file is modified.
-        #s = []
-        #for i in self.applist_directories:
-        #    s.append(os.stat(i).st_mtime)
-        #
-        #bad = True
-        #if self._applist_directory_mtime != None:
-        #    if len(s) == len(self._applist_directory_mtime):
-        #        bad = False
-        #        for i in range(0, len(s)):
-        #            if s[i] != self._applist_directory_mtime[i]:
-        #                bad = True
-        
-        if (bad):
-            self._load()
-            #self._applist_directory_mtime = s
+        files = None
+        if self.need_update:
+            files = self._find_installed_files()
+            self.need_update = False
+        self._load(files)
