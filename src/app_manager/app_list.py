@@ -145,6 +145,7 @@ class AppList(object):
     def __init__(self, applist_directories, platform=None):
         self.applist_directories = applist_directories
         self.installed_files = {}
+        self.invalid_installed_files = []
         self.app_list = []
         self.platform = platform
 
@@ -181,10 +182,13 @@ class AppList(object):
                 rospy.loginfo("%d apps found in %s" % (len(installed_file.available_apps), installed_file.filename))
             except AppException as e:
                 rospy.logerr("ERROR: %s" % (str(e)))
+                invalid_installed_files.append((f, e))
             except Exception as e:
                 rospy.logerr("ERROR: %s" % (str(e)))
+                invalid_installed_files.append((f, e))
 
         self.app_list = app_list
+        self.invalid_installed_files = invalid_installed_files
 
     def get_app_list(self):
         if not self.app_list:
