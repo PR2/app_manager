@@ -1,5 +1,5 @@
-app_manager
-===========
+app_manager [![Build Status](https://travis-ci.com/PR2/app_manager.svg?branch=kinetic-devel)](https://travis-ci.org/PR2/app_manager)
+====================================================================================================================================
 
 A package for making launch file an application
 
