@@ -96,6 +96,7 @@ class InstalledFile(object):
         self.available_apps = []
 
         self._file_mtime = None
+        self.update()
 
     def _load(self):
         available_apps = []
