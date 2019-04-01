@@ -47,7 +47,7 @@ catkin_package(
 
 install(PROGRAMS bin/rosget bin/appmaster
  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-install(DIRECTORY scripts test
+install(DIRECTORY launch scripts test
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   USE_SOURCE_PERMISSIONS)
 
