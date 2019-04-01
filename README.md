@@ -41,6 +41,8 @@ Another way to notify the location is to define them in `<export>` tag in `packa
 <!-- package_root/package.xml -->
 <package>
   ...
+  <run_depend>app_manager</run_depend>
+  ...
   <export>
     <app_manager app_dir="${prefix}/apps"/>
   </export>
