@@ -28,7 +28,7 @@ Once `.installed` file is defined, you have to notify the location of the files 
 One way to notify the location is to add `--applist` argument with `rosrun`.
 
 ```bash
-rosrun app_manager app_manager --applist package_root/apps
+rosrun app_manager app_manager --applist `rospack find package_root`/apps
 ```
 
 This is useful for testing one small `.installed` file or a demonstration.
@@ -80,6 +80,45 @@ All topics/services are advertised under the namespace specified by the paramete
 - `start_app`: Start an available application
 - `stop_app`: Stop a runniing application
 - `reload_app_list`: Reload installed applications from `*.installed`) file.
+
+
+## Examples
+
+Start default roscore
+```
+$ roscore
+```
+and start anther roscore for app_manager from another Terminal
+$ roscore -p 11312
+```
+
+Start app_manager
+```
+$ rosrun app_manager app_manager --applist `rospack find app_manager`/test/applist1 _interface_master:=http://localhost:11312
+```
+Make sure that it founds the apps
+```
+[INFO] [1575604033.724035]: 1 apps found in /home/user/catkin_ws/src/app_manager/test/applist1/apps1.installed
+```
+
+Use service calls to list and start apps.
+```
+$ rosservice call robot/list_apps
+running_apps: []
+available_apps:
+  -
+    name: "app_manager/appA"
+    display_name: "Android Joystick"
+    icon:
+      format: ''
+      data: []
+    client_apps: []
+$ rosservice call /robot/start_app app_manager/appA
+started: True
+error_code: 0
+message: "app [app_manager/appA] started"
+namespace: "/robot/application"
+```
 
 
 ## Maintainer
