@@ -154,7 +154,8 @@ class AppTest(unittest.TestCase):
         self.assertEquals("Android Joystick", ad.display_name)
         self.assertEquals("Control the TurtleBot with an Android device", ad.description)
         self.assertEquals("turtlebot", ad.platform)
-        self.assertEquals(os.path.join(rl_dir, 'resources', 'example-min.launch'), ad.launch)
+        #self.assertEquals(os.path.join(rl_dir, 'resources', 'example-min.launch'), ad.launch) # example-min.launch location changed due to https://github.com/PR2/app_manager/pull/15
+        self.assertEquals(os.path.join(rospack.get_path(PKG), 'test', 'resources', 'example-min.launch'), ad.launch)
         self.assert_(isinstance(ad.interface, Interface))
         self.assertEquals({}, ad.interface.subscribed_topics)
         self.assertEquals({}, ad.interface.published_topics)
@@ -195,7 +196,8 @@ class AppTest(unittest.TestCase):
         self.assertEquals("Android Joystick", ad.display_name)
         self.assertEquals("Control the TurtleBot with an Android device", ad.description)
         self.assertEquals("turtlebot", ad.platform)
-        self.assertEquals(os.path.join(rl_dir, 'resources', 'example-min.launch'), ad.launch)
+        #self.assertEquals(os.path.join(rl_dir, 'resources', 'example-min.launch'), ad.launch) # example-min.launch location changed due to https://github.com/PR2/app_manager/pull/15
+        self.assertEquals(os.path.join(test_dir, 'resources', 'example-min.launch'), ad.launch)
         self.assert_(isinstance(ad.interface, Interface))
         self.assertEquals({}, ad.interface.subscribed_topics)
         self.assertEquals({}, ad.interface.published_topics)
