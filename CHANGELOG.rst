@@ -2,8 +2,8 @@
 Changelog for package app_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.1.1 (2020-04-13)
+------------------
 * use python3.5 for travis (`#18 <https://github.com/pr2/app_manager/issues/18>`_)
 * use app_manager/example-min (`#15 <https://github.com/pr2/app_manager/issues/15>`_)
 
