@@ -129,7 +129,7 @@ class InstalledFile(object):
             self._file_mtime = s.st_mtime
 
     def get_available_apps(self, platform=None):
-        if (platform is not None or platform != 'all'):
+        if (platform is not None and platform != 'all'):
             return filter(lambda app: app.platform == platform,
                           self.available_apps)
         else:
