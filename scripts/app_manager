@@ -34,18 +34,14 @@ def main():
         applist = args.applist
     else:
         rospy.loginfo("Loading from plugin definitions")
-        try:
-            out = subprocess.check_output(["rospack", "plugins", "--attrib=app_dir", "app_manager"]).strip()
-            if not out:
-                parser.error("No app directory found")
-            lines = out.split(os.linesep)
-            for line in lines:
-                pkg, app_dir = line.strip().split()
-                if not os.path.exists(app_dir):
-                    parser.error("In package '%s', app_dir '%s' does not exist. Maybe forgot to start with ${prefix}?" % (pkg, app_dir))
-                applist.append(app_dir)
-        except subprocess.CalledProcessError:
-            parser.error("--applist option is not specified, but loading from plugin definition failed.")
+        rospack = rospkg.RosPack()
+        pkgs = rospack.get_depends_on('app_manager', implicit=False)
+        for pkg in pkgs:
+            m = rospack.get_manifest(pkg)
+            app_dir = m.get_export('app_manager', 'app_dir')
+            applist += app_dir
+        if len(applist) == 0:
+            rospy.logwarn('No app direcotry found')
 
     robot_name = rospy.get_param('/robot/name', 'robot')
     robot_type = rospy.get_param("/robot/type", None)
