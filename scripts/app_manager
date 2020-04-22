@@ -6,14 +6,13 @@ usage: %prog [args]
 
 import rospkg
 
+from argparse import ArgumentParser
 import os
 import sys
-import string
-from argparse import ArgumentParser
-import subprocess
 
 import app_manager
 import rospy
+
 
 def main():
     rospy.init_node('app_manager')
