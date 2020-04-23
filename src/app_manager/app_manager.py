@@ -228,6 +228,13 @@ class AppManager(object):
                     "Launching plugin: {}".format(plugin_launch_file))
                 plugin_launch_files.append(plugin_launch_file)
 
+            for plugin in self._plugins:
+                mod = __import__(plugin['module'].split('.')[0])
+                for sub_mod in plugin['module'].split('.')[1:]:
+                    mod = getattr(mod, sub_mod)
+                start_plugin_attr = getattr(mod, 'app_manager_start_plugin')
+                start_plugin_attr()
+
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
             self._launch = roslaunch.parent.ROSLaunchParent(
                 rospy.get_param("/run_id"), [app.launch],
@@ -279,6 +286,12 @@ class AppManager(object):
                     "App stopped with exit code: {}".format(exit_code))
             if self._plugin_launch:
                 self._plugin_launch.shutdown()
+            for plugin in self._plugins:
+                mod = __import__(plugin['module'].split('.')[0])
+                for sub_mod in plugin['module'].split('.')[1:]:
+                    mod = getattr(mod, sub_mod)
+                stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
+                stop_plugin_attr()
         finally:
             self._launch = None
             self._plugin_launch = None
