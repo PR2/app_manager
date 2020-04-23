@@ -9,6 +9,7 @@ import rospkg
 from argparse import ArgumentParser
 import os
 import sys
+import yaml
 
 import app_manager
 import rospy
@@ -25,15 +26,19 @@ def main():
     args = parser.parse_args(argv[1:])
 
     applist = []
+    plugin_yamls = []
     rospack = rospkg.RosPack()
     depend_pkgs = rospack.get_depends_on('app_manager', implicit=False)
 
     rospy.loginfo("Loading from plugin definitions")
     for depend_pkg in depend_pkgs:
-        m = rospack.get_manifest(depend_pkg)
-        app_dir = m.get_export('app_manager', 'app_dir')
-        if len(app_dir) != 0:
-            applist += app_dir
+        manifest = rospack.get_manifest(depend_pkg)
+        app_dirs = manifest.get_export('app_manager', 'app_dir')
+        plugin_yaml = manifest.get_export('app_manager', 'plugin')
+        if len(app_dirs) != 0:
+            applist += app_dirs
+        if len(plugin_yaml) != 0:
+            plugin_yamls += plugin_yaml
 
     if args.applist is not None:
         rospy.loginfo("Loading applist from --applist option")
@@ -46,6 +51,14 @@ def main():
 
     if len(applist) == 0:
         rospy.logwarn('No applist directory found.')
+
+    plugins = None
+    for plugin_yaml in plugin_yamls:
+        with open(plugin_yaml) as f:
+            plugin = yaml.safe_load(f)
+        if plugins is None:
+            plugins = []
+        plugins += plugin
 
     robot_name = rospy.get_param('/robot/name', 'robot')
     robot_type = rospy.get_param("/robot/type", None)
@@ -76,7 +89,8 @@ def main():
             rospy.logerr("Failed to load exchange: {}".format(e))
             sys.exit(1)
 
-    am = app_manager.AppManager(robot_name, interface_master, app_list, exchange)
+    am = app_manager.AppManager(
+        robot_name, interface_master, app_list, exchange, plugins)
 
     rospy.on_shutdown(am.shutdown)
 

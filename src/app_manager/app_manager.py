@@ -45,7 +45,7 @@ import roslaunch.pmon
 
 from std_srvs.srv import Empty, EmptyResponse
 
-from .app import AppDefinition, load_AppDefinition_by_name
+from .app import AppDefinition, find_resource, load_AppDefinition_by_name
 from .exceptions import LaunchException, AppException, InvalidAppException, NotFoundException
 from .master_sync import MasterSync
 from .msg import App, AppList, StatusCodes, AppStatus, AppInstallationState, ExchangeApp
@@ -53,12 +53,16 @@ from .srv import StartApp, StopApp, ListApps, ListAppsResponse, StartAppResponse
 
 class AppManager(object):
 
-    def __init__(self, robot_name, interface_master, app_list, exchange):
+    def __init__(
+            self, robot_name, interface_master, app_list,
+            exchange, plugins=None
+    ):
         self._robot_name = robot_name
         self._interface_master = interface_master
         self._app_list = app_list
         self._current_app = self._current_app_definition = None
         self._exchange = exchange
+        self._plugins = plugins
             
         rospy.loginfo("Starting app manager for %s"%self._robot_name)
 
@@ -94,6 +98,7 @@ class AppManager(object):
                                     local_pub_names=pub_names)
 
         self._launch = None
+        self._plugin_launch = None
         self._interface_sync = None
 
         roslaunch.pmon._init_signal_handlers()
@@ -111,6 +116,8 @@ class AppManager(object):
         if self._launch:
             self._launch.shutdown()
             self._interface_sync.stop()
+        if self._plugin_launch:
+            self._plugin_launch.shutdown()
 
     def _get_current_app(self):
         return self._current_app
@@ -214,11 +221,25 @@ class AppManager(object):
             rospy.loginfo("Launching: %s"%(app.launch))
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'launching %s'%(app.display_name)))
 
+            plugin_launch_files = []
+            for plugin in self._plugins:
+                plugin_launch_file = find_resource(plugin['launch'])
+                rospy.loginfo(
+                    "Launching plugin: {}".format(plugin_launch_file))
+                plugin_launch_files.append(plugin_launch_file)
+
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
-            self._launch = roslaunch.parent.ROSLaunchParent(rospy.get_param("/run_id"),
-                                                            [app.launch], is_core=False,
-                                                            process_listeners=())
+            self._launch = roslaunch.parent.ROSLaunchParent(
+                rospy.get_param("/run_id"), [app.launch],
+                is_core=False, process_listeners=())
+            if len(plugin_launch_files) > 0:
+                self._plugin_launch = roslaunch.parent.ROSLaunchParent(
+                    rospy.get_param("/run_id"), plugin_launch_files,
+                    is_core=False, process_listeners=())
+
             self._launch._load_config()
+            if self._plugin_launch:
+                self._plugin_launch._load_config()
 
             #TODO: convert to method
             for N in self._launch.config.nodes:
@@ -227,6 +248,8 @@ class AppManager(object):
                 for t in app.interface.subscribed_topics.keys():
                     N.remap_args.append((t, self._app_interface + '/' + t))
             self._launch.start()
+            if self._plugin_launch:
+                self._plugin_launch.start()
 
             fp = [self._app_interface + '/' + x for x in app.interface.subscribed_topics.keys()]
             lp = [self._app_interface + '/' + x for x in app.interface.published_topics.keys()]
@@ -254,8 +277,11 @@ class AppManager(object):
                 exit_code = self._launch.pm.dead_list[0].exit_code
                 rospy.logerr(
                     "App stopped with exit code: {}".format(exit_code))
+            if self._plugin_launch:
+                self._plugin_launch.shutdown()
         finally:
             self._launch = None
+            self._plugin_launch = None
         try:
             self._interface_sync.stop()
         finally:
