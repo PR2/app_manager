@@ -233,7 +233,7 @@ class AppManager(object):
                 for sub_mod in plugin['module'].split('.')[1:]:
                     mod = getattr(mod, sub_mod)
                 start_plugin_attr = getattr(mod, 'app_manager_start_plugin')
-                start_plugin_attr()
+                tart_plugin_attr(app)
 
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
             self._launch = roslaunch.parent.ROSLaunchParent(
@@ -291,7 +291,7 @@ class AppManager(object):
                 for sub_mod in plugin['module'].split('.')[1:]:
                     mod = getattr(mod, sub_mod)
                 stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
-                stop_plugin_attr()
+                stop_plugin_attr(self._current_app_definition)
         finally:
             self._launch = None
             self._plugin_launch = None
