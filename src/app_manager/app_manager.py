@@ -281,18 +281,25 @@ class AppManager(object):
     def _stop_current(self):
         try:
             self._launch.shutdown()
+            exit_code = 0
             if len(self._launch.pm.dead_list) > 0:
                 exit_code = self._launch.pm.dead_list[0].exit_code
                 rospy.logerr(
                     "App stopped with exit code: {}".format(exit_code))
             if self._plugin_launch:
                 self._plugin_launch.shutdown()
+                if exit_code == 0:
+                    rospy.loginfo(
+                        "Task stoped with exit code: {}".format(exit_code))
+                else:
+                    rospy.logerr(
+                        "Task stoped with exit code: {}".format(exit_code))
                 for plugin in self._plugins:
                     mod = __import__(plugin['module'].split('.')[0])
                     for sub_mod in plugin['module'].split('.')[1:]:
                         mod = getattr(mod, sub_mod)
                     stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
-                    stop_plugin_attr(self._current_app_definition)
+                    stop_plugin_attr(self._current_app_definition, exit_code)
         finally:
             self._launch = None
             self._plugin_launch = None
