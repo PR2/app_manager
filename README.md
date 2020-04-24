@@ -87,8 +87,12 @@ All topics/services are advertised under the namespace specified by the paramete
 Start default roscore
 ```
 $ roscore
+
 ```
-and start anther roscore for app_manager from another Terminal
+
+and start another roscore for app_manager from another Terminal
+
+```
 $ roscore -p 11312
 ```
 
