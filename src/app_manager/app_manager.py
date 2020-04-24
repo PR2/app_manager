@@ -252,12 +252,8 @@ class AppManager(object):
             self._launch.shutdown()
             if len(self._launch.pm.dead_list) > 0:
                 exit_code = self._launch.pm.dead_list[0].exit_code
-                if exit_code > 0:
-                    rospy.logerr(
-                        "App stopped with exit code: {}".format(exit_code))
-                else:
-                    rospy.loginfo(
-                        "App stopped with exit code: {}".format(exit_code))
+                rospy.logerr(
+                    "App stopped with exit code: {}".format(exit_code))
         finally:
             self._launch = None
         try:
