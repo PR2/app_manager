@@ -45,7 +45,7 @@ def main():
         applist += args.applist
 
     if len(applist) == 0:
-        rospy.logwarn('No applist direcotry found.')
+        rospy.logwarn('No applist directory found.')
 
     robot_name = rospy.get_param('/robot/name', 'robot')
     robot_type = rospy.get_param("/robot/type", None)
