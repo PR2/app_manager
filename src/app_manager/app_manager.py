@@ -250,6 +250,10 @@ class AppManager(object):
     def _stop_current(self):
         try:
             self._launch.shutdown()
+            if len(self._launch.pm.dead_list) > 0:
+                exit_code = self._launch.pm.dead_list[0].exit_code
+                rospy.logerr(
+                    "App stopped with exit code: {}".format(exit_code))
         finally:
             self._launch = None
         try:
