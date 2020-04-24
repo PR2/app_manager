@@ -59,7 +59,7 @@ def main():
     try:
         app_list = app_manager.AppList(applist, platform=robot_type)
     except app_manager.AppException as e:
-        print >> sys.stderr, "Failed to load app list: %s"%(str(e))
+        rospy.logerr("Failed to load app list: {}".format(e))
         sys.exit(1)
 
     exchange = None
@@ -73,7 +73,7 @@ def main():
             exchange = app_manager.Exchange(exchange_url, app_path, lambda(x): rospy.logerr(x))
             app_list.add_directory(os.path.join(app_path, "installed"))
         except app_manager.AppException as e:
-            print >> sys.stderr, "Failed to load exchange: %s"%(str(e))
+            rospy.logerr("Failed to load exchange: {}".format(e))
             sys.exit(1)
 
     am = app_manager.AppManager(robot_name, interface_master, app_list, exchange)
