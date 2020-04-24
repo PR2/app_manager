@@ -6,14 +6,13 @@ usage: %prog [args]
 
 import rospkg
 
+from argparse import ArgumentParser
 import os
 import sys
-import string
-from argparse import ArgumentParser
-import subprocess
 
 import app_manager
 import rospy
+
 
 def main():
     rospy.init_node('app_manager')
@@ -26,26 +25,27 @@ def main():
     args = parser.parse_args(argv[1:])
 
     applist = []
+    rospack = rospkg.RosPack()
+    depend_pkgs = rospack.get_depends_on('app_manager', implicit=False)
+
+    rospy.loginfo("Loading from plugin definitions")
+    for depend_pkg in depend_pkgs:
+        m = rospack.get_manifest(depend_pkg)
+        app_dir = m.get_export('app_manager', 'app_dir')
+        if len(app_dir) != 0:
+            applist += app_dir
+
     if args.applist is not None:
         rospy.loginfo("Loading applist from --applist option")
         for path in args.applist:
             if not os.path.exists(path):
-                parser.error("applist directory [%s] does not exist.\nUse --applist to set the correct location" % (path))
-        applist = args.applist
-    else:
-        rospy.loginfo("Loading from plugin definitions")
-        try:
-            out = subprocess.check_output(["rospack", "plugins", "--attrib=app_dir", "app_manager"]).strip()
-            if not out:
-                parser.error("No app directory found")
-            lines = out.split(os.linesep)
-            for line in lines:
-                pkg, app_dir = line.strip().split()
-                if not os.path.exists(app_dir):
-                    parser.error("In package '%s', app_dir '%s' does not exist. Maybe forgot to start with ${prefix}?" % (pkg, app_dir))
-                applist.append(app_dir)
-        except subprocess.CalledProcessError:
-            parser.error("--applist option is not specified, but loading from plugin definition failed.")
+                rospy.logerr(
+                    "applist directory {} does not exist."
+                    "Use --applist to set the correct location".format(path))
+        applist += args.applist
+
+    if len(applist) == 0:
+        rospy.logwarn('No applist directory found.')
 
     robot_name = rospy.get_param('/robot/name', 'robot')
     robot_type = rospy.get_param("/robot/type", None)
