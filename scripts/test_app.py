@@ -19,9 +19,9 @@ def main(argv, stdout, environ):
 
   try:
     a = app_manager.App(args[0])
-    print a.yaml
-  except app_manager.TaskException, e:
-    print e
+    print(a.yaml)
+  except app_manager.TaskException as e:
+    print(e)
 
 if __name__ == "__main__":
   main(sys.argv, sys.stdout, os.environ)

@@ -7,7 +7,7 @@ command = ""
 try:
     command = sys.argv[1]
 except:
-    print "No command specified,", sys.argv[0], "help"
+    print ("No command specified, {} help".format(sys.argv[0]))
     sys.exit(1)
 
 cmd_args = []
@@ -20,10 +20,10 @@ def valid_package(n):
             or i == '0' or i == '-' or i == '_'):
             pass #Character is valid
         else:
-            print "Bad character in name:", i, "in", n
+            print ("Bad character in name: {} in {}".format(i, n))
             return False
     if (n[0:len("ros-")] != "ros-"):
-        print "You are not allowed to modifiy packages not prefixed with \"ros-\", rejecting:", n
+        print ("You are not allowed to modifiy packages not prefixed with \"ros-\", rejecting: {}".format(n))
         return False
     return True
 
@@ -33,10 +33,10 @@ elif (command == "install"):
     try:
         package = sys.argv[2]
     except:
-        print "Invalid package, try help as command"
+        print ("Invalid package, try help as command")
         sys.exit(3)
     if (not valid_package(package)):
-        print "Invalid package name"
+        print ("Invalid package name")
         sys.exit(4)
     else:
         cmd_args = ["apt-get", "install", package, "-y"]
@@ -44,31 +44,31 @@ elif (command == "remove"):
     try:
         package= sys.argv[2]
     except:
-        print "Invalid package, try help as command"
+        print ("Invalid package, try help as command")
         sys.exit(3)
     if (not valid_package(package)):
-        print "Invalid package name"
+        print ("Invalid package name")
         sys.exit(4)
     else:
         cmd_args = ["apt-get", "remove", package, "-y"]
 elif (command == "help"):
-    print sys.argv[0], "is a wrapper for apt-get that only allows you to install ROS packages."
-    print "It is used by app manager and configured to run passwordlessly in sudo. You can use"
-    print "it to install and uninstall packages prefixed with \"ros-\". Usage:"
-    print sys.argv[0], "help: print this screen."
-    print sys.argv[0], "remove <package-name>: remove a package"
-    print sys.argv[0], "install <package-name>: install a package"
-    print sys.argv[0], "update: do an apt-get update"
+    print ("{} is a wrapper for apt-get that only allows you to install ROS packages.".format(sys.argv[0]))
+    print ("It is used by app manager and configured to run passwordlessly in sudo. You can use")
+    print ("it to install and uninstall packages prefixed with \"ros-\". Usage:")
+    print ("{} help: print this screen.".format(sys.argv[0]))
+    print ("{} remove <package-name>: remove a package".format(sys.argv[0]))
+    print ("{} install <package-name>: install a package".format(sys.argv[0]))
+    print ("{} update: do an apt-get update".format(sys.argv[0]))
     sys.exit(2)
 else:
-    print "Invalid command, try:", sys.arg[0], "help"
+    print ("Invalid command, try: {} help".format(sys.argv[0]))
     sys.exit(2)
 
 
 proc = subprocess.Popen(cmd_args)
 
 
-print proc.communicate()
+print (proc.communicate())
 
 sys.exit(proc.returncode)
 
