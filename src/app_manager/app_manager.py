@@ -100,6 +100,7 @@ class AppManager(object):
         self._launch = None
         self._plugin_launch = None
         self._interface_sync = None
+        self._exit_code = None
 
         roslaunch.pmon._init_signal_handlers()
 
@@ -111,23 +112,27 @@ class AppManager(object):
         self.publish_list_apps()
         
     def shutdown(self):
-        exit_code = 0
         if self._api_sync:
             self._api_sync.stop()
         if self._launch:
             self._launch.shutdown()
             self._interface_sync.stop()
-            if len(self._launch.pm.dead_list) > 0:
-                exit_code = self._launch.pm.dead_list[0].exit_code
+            if self._exit_code > 0:
                 rospy.logerr(
-                    "App stopped with exit code: {}".format(exit_code))
+                    "App stopped with exit code: {}".format(self._exit_code))
+            elif len(self._launch.pm.dead_list) > 0:
+                self._exit_code = self._launch.pm.dead_list[0].exit_code
+                rospy.logerr(
+                    "App stopped with exit code: {}".format(self._exit_code))
         if self._plugin_launch:
+            ctx = {}
+            ctx['exit_code'] = self._exit_code
             for plugin in self._plugins:
                 mod = __import__(plugin['module'].split('.')[0])
                 for sub_mod in plugin['module'].split('.')[1:]:
                     mod = getattr(mod, sub_mod)
                 stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
-                stop_plugin_attr(self._current_app_definition, exit_code)
+                stop_plugin_attr(self._current_app_definition, ctx)
             self._plugin_launch.shutdown()
 
     def _get_current_app(self):
@@ -300,15 +305,17 @@ class AppManager(object):
         try:
             # stop main launch first
             self._launch.shutdown()
-            exit_code = 0
-            if len(self._launch.pm.dead_list) > 0:
-                exit_code = self._launch.pm.dead_list[0].exit_code
+            if self._exit_code > 0:
                 rospy.logerr(
-                    "App stopped with exit code: {}".format(exit_code))
+                    "App stopped with exit code: {}".format(self._exit_code))
+            elif len(self._launch.pm.dead_list) > 0:
+                self._exit_code = self._launch.pm.dead_list[0].exit_code
+                rospy.logerr(
+                    "App stopped with exit code: {}".format(self._exit_code))
             # then stop plugin launch
             if self._plugin_launch:
                 ctx = {}
-                ctx['exit_code'] = exit_code
+                ctx['exit_code'] = self._exit_code
                 for plugin in self._plugins:
                     mod = __import__(plugin['module'].split('.')[0])
                     for sub_mod in plugin['module'].split('.')[1:]:
@@ -316,15 +323,10 @@ class AppManager(object):
                     stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
                     ctx = stop_plugin_attr(self._current_app_definition, ctx)
                 self._plugin_launch.shutdown()
-                if exit_code == 0:
-                    rospy.loginfo(
-                        "Task stoped with exit code: {}".format(exit_code))
-                else:
-                    rospy.logerr(
-                        "Task stoped with exit code: {}".format(exit_code))
         finally:
             self._launch = None
             self._plugin_launch = None
+            self._exit_code = None
         try:
             self._interface_sync.stop()
         finally:
@@ -351,6 +353,15 @@ class AppManager(object):
             if launch:
                 pm = launch.pm
                 if pm:
+                    procs = pm.procs[:]
+                    if len(procs) > 0:
+                        required = [p.required for p in procs]
+                        if any(required):
+                            exit_codes = [
+                                p.exit_code for p in procs if p.required]
+                        else:
+                            exit_codes = [p.exit_code for p in procs]
+                        self._exit_code = max(exit_codes)
                     if pm.done:
                         time.sleep(1.0)
                         self.stop_app(self._current_app_definition.name)
