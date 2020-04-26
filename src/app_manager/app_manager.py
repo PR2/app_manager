@@ -111,12 +111,23 @@ class AppManager(object):
         self.publish_list_apps()
         
     def shutdown(self):
+        exit_code = 0
         if self._api_sync:
             self._api_sync.stop()
         if self._launch:
             self._launch.shutdown()
             self._interface_sync.stop()
+            if len(self._launch.pm.dead_list) > 0:
+                exit_code = self._launch.pm.dead_list[0].exit_code
+                rospy.logerr(
+                    "App stopped with exit code: {}".format(exit_code))
         if self._plugin_launch:
+            for plugin in self._plugins:
+                mod = __import__(plugin['module'].split('.')[0])
+                for sub_mod in plugin['module'].split('.')[1:]:
+                    mod = getattr(mod, sub_mod)
+                stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
+                stop_plugin_attr(self._current_app_definition, exit_code)
             self._plugin_launch.shutdown()
 
     def _get_current_app(self):
