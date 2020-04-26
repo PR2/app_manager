@@ -33,8 +33,13 @@
 # Revision $Id: app_manager.py 14948 2011-09-07 19:25:54Z pratkanis $
 
 # author: leibs
+import sys
 
-import thread
+if sys.version_info[0] == 3:
+    import _thread # python3 renamed from thread to _thread
+else:
+    import thread
+
 import time
 
 import rosgraph.names
