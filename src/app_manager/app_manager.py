@@ -235,7 +235,7 @@ class AppManager(object):
             plugin_launch_files = []
             if self._plugins:
                 for plugin in self._plugins:
-                    if plugin['launch']:
+                    if 'launch' in plugin and plugin['launch']:
                         plugin_launch_file = find_resource(plugin['launch'])
                         rospy.loginfo(
                             "Launching plugin: {}".format(plugin_launch_file))
