@@ -265,13 +265,14 @@ class AppManager(object):
             if self._plugin_launch:
                 self._plugin_launch.start()
             if self._plugins:
+                ctx = {}
                 for plugin in self._plugins:
                     mod = __import__(plugin['module'].split('.')[0])
                     for sub_mod in plugin['module'].split('.')[1:]:
                         mod = getattr(mod, sub_mod)
                     start_plugin_attr = getattr(
                         mod, 'app_manager_start_plugin')
-                    start_plugin_attr(app)
+                    ctx = start_plugin_attr(app, ctx)
 
             # then launch main launch
             self._launch.start()
@@ -306,12 +307,14 @@ class AppManager(object):
                     "App stopped with exit code: {}".format(exit_code))
             # then stop plugin launch
             if self._plugin_launch:
+                ctx = {}
+                ctx['exit_code'] = exit_code
                 for plugin in self._plugins:
                     mod = __import__(plugin['module'].split('.')[0])
                     for sub_mod in plugin['module'].split('.')[1:]:
                         mod = getattr(mod, sub_mod)
                     stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
-                    stop_plugin_attr(self._current_app_definition, exit_code)
+                    ctx = stop_plugin_attr(self._current_app_definition, ctx)
                 self._plugin_launch.shutdown()
                 if exit_code == 0:
                     rospy.loginfo(
