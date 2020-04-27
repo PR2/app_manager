@@ -101,6 +101,8 @@ class AppManager(object):
         self._plugin_launch = None
         self._interface_sync = None
         self._exit_code = None
+        self._current_plugins = None
+        self._plugin_context = None
 
         roslaunch.pmon._init_signal_handlers()
 
@@ -124,15 +126,16 @@ class AppManager(object):
                 self._exit_code = self._launch.pm.dead_list[0].exit_code
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
-        if self._plugin_launch:
-            ctx = {}
-            ctx['exit_code'] = self._exit_code
-            for plugin in self._plugins:
+        if self._current_plugins:
+            self._plugin_context['exit_code'] = self._exit_code
+            for plugin in self._current_plugins:
                 mod = __import__(plugin['module'].split('.')[0])
                 for sub_mod in plugin['module'].split('.')[1:]:
                     mod = getattr(mod, sub_mod)
                 stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
-                stop_plugin_attr(self._current_app_definition, ctx)
+                self._plugin_context = stop_plugin_attr(
+                    self._current_app_definition, self._plugin_context)
+        if self._plugin_launch:
             self._plugin_launch.shutdown()
 
     def _get_current_app(self):
@@ -239,7 +242,11 @@ class AppManager(object):
 
             plugin_launch_files = []
             if self._plugins:
-                for plugin in self._plugins:
+                self._current_plugins = []
+                for p in app.plugins:
+                    p_type = p['type']
+                    plugin = [p for p in self._plugins if p['name'] == p_type][0]
+                    self._current_plugins.append(plugin)
                     if 'launch' in plugin and plugin['launch']:
                         plugin_launch_file = find_resource(plugin['launch'])
                         rospy.loginfo(
@@ -269,15 +276,16 @@ class AppManager(object):
             # run plugin launches first
             if self._plugin_launch:
                 self._plugin_launch.start()
-            if self._plugins:
-                ctx = {}
-                for plugin in self._plugins:
+            if self._current_plugins:
+                self._plugin_context = {}
+                for plugin in self._current_plugins:
                     mod = __import__(plugin['module'].split('.')[0])
                     for sub_mod in plugin['module'].split('.')[1:]:
                         mod = getattr(mod, sub_mod)
                     start_plugin_attr = getattr(
                         mod, 'app_manager_start_plugin')
-                    ctx = start_plugin_attr(app, ctx)
+                    self._plugin_context = start_plugin_attr(
+                        app, self._plugin_context)
 
             # then launch main launch
             self._launch.start()
@@ -313,20 +321,23 @@ class AppManager(object):
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
             # then stop plugin launch
-            if self._plugin_launch:
-                ctx = {}
-                ctx['exit_code'] = self._exit_code
-                for plugin in self._plugins:
+            if self._current_plugins:
+                self._plugin_context['exit_code'] = self._exit_code
+                for plugin in self._current_plugins:
                     mod = __import__(plugin['module'].split('.')[0])
                     for sub_mod in plugin['module'].split('.')[1:]:
                         mod = getattr(mod, sub_mod)
                     stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
-                    ctx = stop_plugin_attr(self._current_app_definition, ctx)
+                    self._plugin_context = stop_plugin_attr(
+                        self._current_app_definition, self._plugin_context)
+            if self._plugin_launch:
                 self._plugin_launch.shutdown()
         finally:
             self._launch = None
             self._plugin_launch = None
             self._exit_code = None
+            self._current_plugins = None
+            self._plugin_context = None
         try:
             self._interface_sync.stop()
         finally:
