@@ -244,15 +244,23 @@ class AppManager(object):
             plugin_launch_files = []
             if self._plugins:
                 self._current_plugins = []
-                for p in app.plugins:
-                    p_type = p['type']
-                    plugin = [p for p in self._plugins if p['name'] == p_type][0]
+                for app_plugin in app.plugins:
+                    app_plugin_type = app_plugin['type']
+                    plugin = [p for p in self._plugins if p['name'] == app_plugin_type][0]
                     self._current_plugins.append(plugin)
                     if 'launch' in plugin and plugin['launch']:
                         plugin_launch_file = find_resource(plugin['launch'])
+                        if 'launch_args' in app_plugin:
+                            plugin_launch_args = []
+                            for k, v in app_plugin['launch_args'].items():
+                                plugin_launch_args.append('{}:={}'.format(k, v))
+                        else:
+                            plugin_launch_args = None
                         rospy.loginfo(
-                            "Launching plugin: {}".format(plugin_launch_file))
-                        plugin_launch_files.append(plugin_launch_file)
+                            "Launching plugin: {} {}".format(
+                                plugin_launch_file, plugin_launch_args))
+                        plugin_launch_files.append(
+                            (plugin_launch_file, plugin_launch_args))
 
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
             self._launch = roslaunch.parent.ROSLaunchParent(
