@@ -122,7 +122,8 @@ class AppManager(object):
             if self._exit_code > 0:
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
-            elif len(self._launch.pm.dead_list) > 0:
+            elif (self._exit_code is None
+                    and len(self._launch.pm.dead_list) > 0):
                 self._exit_code = self._launch.pm.dead_list[0].exit_code
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
@@ -316,7 +317,8 @@ class AppManager(object):
             if self._exit_code > 0:
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
-            elif len(self._launch.pm.dead_list) > 0:
+            elif (self._exit_code is None
+                    and len(self._launch.pm.dead_list) > 0):
                 self._exit_code = self._launch.pm.dead_list[0].exit_code
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
@@ -366,13 +368,10 @@ class AppManager(object):
                 if pm:
                     procs = pm.procs[:]
                     if len(procs) > 0:
-                        required = [p.required for p in procs]
-                        if any(required):
+                        if any([p.required for p in procs]):
                             exit_codes = [
                                 p.exit_code for p in procs if p.required]
-                        else:
-                            exit_codes = [p.exit_code for p in procs]
-                        self._exit_code = max(exit_codes)
+                            self._exit_code = max(exit_codes)
                     if pm.done:
                         time.sleep(1.0)
                         self.stop_app(self._current_app_definition.name)
