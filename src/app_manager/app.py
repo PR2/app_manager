@@ -75,9 +75,9 @@ class Client(object):
                
 class AppDefinition(object):
     __slots__ = ['name', 'display_name', 'description', 'platform',
-                 'launch', 'interface', 'clients', 'icon']
+                 'launch', 'interface', 'clients', 'icon', 'plugins']
     def __init__(self, name, display_name, description, platform,
-                 launch, interface, clients, icon=None):
+                 launch, interface, clients, icon=None, plugins=None):
         self.name = name
         self.display_name = display_name
         self.description = description
@@ -86,6 +86,7 @@ class AppDefinition(object):
         self.interface = interface
         self.clients = clients
         self.icon = icon
+        self.plugins = plugins
 
     def __repr__(self):
         d = {}
@@ -222,6 +223,21 @@ def _AppDefinition_load_clients_entry(app_data, appfile="UNKNOWN"):
         clients.append(Client(client_type, manager_data, app_data))
     return clients
 
+
+def _AppDefinition_load_plugins_entry(app_data, appfile="UNKNOWN"):
+    """
+    @raise InvalidAppExcetion: if app definition is invalid.
+    """
+    # load/validate launch entry
+    try:
+        plugins = app_data.get('plugins', '')
+        if plugins == '':
+            return None
+        return plugins
+    except ValueError as e:
+        raise InvalidAppException("Malformed appfile [%s]: bad plugins entry: %s"%(appfile, e))
+
+
 def load_AppDefinition_from_file(appfile, appname):
     """
     @raise InvalidAppExcetion: if app definition is invalid.
@@ -242,9 +258,10 @@ def load_AppDefinition_from_file(appfile, appname):
         interface = _AppDefinition_load_interface_entry(app_data, appfile)
         clients = _AppDefinition_load_clients_entry(app_data, appfile)
         icon = _AppDefinition_load_icon_entry(app_data, appfile)
+        plugins = _AppDefinition_load_plugins_entry(app_data, appfile)
 
     return AppDefinition(appname, display_name, description, platform,
-                         launch, interface, clients, icon)
+                         launch, interface, clients, icon, plugins)
     
 def load_AppDefinition_by_name(appname):
     """
