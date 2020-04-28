@@ -127,6 +127,8 @@ class AppManager(object):
                 self._exit_code = self._launch.pm.dead_list[0].exit_code
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
+        if self._plugin_launch:
+            self._plugin_launch.shutdown()
         if self._current_plugins:
             self._plugin_context['exit_code'] = self._exit_code
             for app_plugin, plugin in self._current_plugins:
@@ -141,9 +143,6 @@ class AppManager(object):
                 self._plugin_context = stop_plugin_attr(
                     self._current_app_definition,
                     self._plugin_context, plugin_args)
-        if self._plugin_launch:
-            self._plugin_launch.shutdown()
-
     def _get_current_app(self):
         return self._current_app
 
@@ -340,6 +339,8 @@ class AppManager(object):
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
             # then stop plugin launch
+            if self._plugin_launch:
+                self._plugin_launch.shutdown()
             if self._current_plugins:
                 self._plugin_context['exit_code'] = self._exit_code
                 for app_plugin, plugin in self._current_plugins:
@@ -354,8 +355,6 @@ class AppManager(object):
                     self._plugin_context = stop_plugin_attr(
                         self._current_app_definition,
                         self._plugin_context, plugin_args)
-            if self._plugin_launch:
-                self._plugin_launch.shutdown()
         finally:
             self._launch = None
             self._plugin_launch = None
