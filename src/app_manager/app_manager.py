@@ -246,7 +246,7 @@ class AppManager(object):
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'launching %s'%(app.display_name)))
 
             plugin_launch_files = []
-            if self._plugins:
+            if app.plugins:
                 self._current_plugins = []
                 for app_plugin in app.plugins:
                     app_plugin_type = app_plugin['type']
