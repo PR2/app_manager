@@ -255,6 +255,8 @@ class AppManager(object):
                         if 'launch_args' in app_plugin:
                             plugin_launch_args = []
                             for k, v in app_plugin['launch_args'].items():
+                                if isinstance(v, list):
+                                    v = " ".join(map(str, v))
                                 plugin_launch_args.append("{}:={}".format(k, v))
                         else:
                             plugin_launch_args = None
