@@ -34,15 +34,20 @@
 
 # author: leibs
 
+import logging
 import thread
 import time
 
 import rosgraph.names
 import rospy
 
+import roslaunch.config
+import roslaunch.core
 import roslaunch.parent
 import roslaunch.pmon
+import roslaunch.xmlloader
 
+import roslaunch.loader
 from std_srvs.srv import Empty, EmptyResponse
 
 from .app import AppDefinition, find_resource, load_AppDefinition_by_name
@@ -50,6 +55,62 @@ from .exceptions import LaunchException, AppException, InvalidAppException, NotF
 from .master_sync import MasterSync
 from .msg import App, AppList, StatusCodes, AppStatus, AppInstallationState, ExchangeApp
 from .srv import StartApp, StopApp, ListApps, ListAppsResponse, StartAppResponse, StopAppResponse, InstallApp, UninstallApp, GetInstallationState, UninstallAppResponse, InstallAppResponse, GetInstallationStateResponse, GetAppDetails, GetAppDetailsResponse
+
+
+def _load_config_default(
+        roslaunch_files, port, roslaunch_strs=None, loader=None, verbose=False,
+        assign_machines=True, ignore_unset_args=False
+):
+    logger = logging.getLogger('roslaunch.config')
+
+    config = roslaunch.config.ROSLaunchConfig()
+    if port:
+        config.master.uri = rosgraph.network.create_local_xmlrpc_uri(port)
+
+    loader = loader or roslaunch.xmlloader.XmlLoader()
+    loader.ignore_unset_args = ignore_unset_args
+
+    # load the roscore file first. we currently have
+    # last-declaration wins rules.  roscore is just a
+    # roslaunch file with special load semantics
+    roslaunch.config.load_roscore(loader, config, verbose=verbose)
+
+    # load the roslaunch_files into the config
+    for f in roslaunch_files:
+        if isinstance(f, tuple):
+            f, args = f
+        else:
+            args = None
+        try:
+            logger.info('loading config file %s' % f)
+            loader.load(f, config, argv=args, verbose=verbose)
+        except roslaunch.xmlloader.XmlParseException as e:
+            raise roslaunch.core.RLException(e)
+        except roslaunch.loader.LoadException as e:
+            raise roslaunch.core.RLException(e)
+    # we need this for the hardware test systems, which builds up
+    # roslaunch launch files in memory
+    if roslaunch_strs:
+        for launch_str in roslaunch_strs:
+            try:
+                logger.info('loading config file from string')
+                loader.load_string(launch_str, config)
+            except roslaunch.xmlloader.XmlParseException as e:
+                raise roslaunch.core.RLException(
+                    'Launch string: %s\nException: %s' % (launch_str, e))
+            except roslaunch.loader.LoadException as e:
+                raise roslaunch.core.RLException(
+                    'Launch string: %s\nException: %s' % (launch_str, e))
+    # choose machines for the nodes
+    if assign_machines:
+        config.assign_machines()
+    return config
+
+
+# overwrite load_config_default function for kinetic
+# see: https://github.com/ros/ros_comm/pull/1115
+roslaunch.config.load_config_default = _load_config_default
+
 
 class AppManager(object):
 
