@@ -177,31 +177,10 @@ class AppManager(object):
     def shutdown(self):
         if self._api_sync:
             self._api_sync.stop()
-        if self._launch:
-            self._launch.shutdown()
+        if self._interface_sync:
             self._interface_sync.stop()
-            if (self._exit_code is None
-                    and len(self._launch.pm.dead_list) > 0):
-                self._exit_code = self._launch.pm.dead_list[0].exit_code
-            if self._exit_code > 0:
-                rospy.logerr(
-                    "App stopped with exit code: {}".format(self._exit_code))
-        if self._plugin_launch:
-            self._plugin_launch.shutdown()
-        if self._current_plugins:
-            self._plugin_context['exit_code'] = self._exit_code
-            for app_plugin, plugin in self._current_plugins:
-                if 'plugin_args' in app_plugin:
-                    plugin_args = app_plugin['plugin_args']
-                else:
-                    plugin_args = None
-                mod = __import__(plugin['module'].split('.')[0])
-                for sub_mod in plugin['module'].split('.')[1:]:
-                    mod = getattr(mod, sub_mod)
-                stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
-                self._plugin_context = stop_plugin_attr(
-                    self._current_app_definition,
-                    self._plugin_context, plugin_args)
+        self.__stop_current()
+
     def _get_current_app(self):
         return self._current_app
 
@@ -389,31 +368,7 @@ class AppManager(object):
     
     def _stop_current(self):
         try:
-            # stop main launch first
-            self._launch.shutdown()
-            if (self._exit_code is None
-                    and len(self._launch.pm.dead_list) > 0):
-                self._exit_code = self._launch.pm.dead_list[0].exit_code
-            if self._exit_code > 0:
-                rospy.logerr(
-                    "App stopped with exit code: {}".format(self._exit_code))
-            # then stop plugin launch
-            if self._plugin_launch:
-                self._plugin_launch.shutdown()
-            if self._current_plugins:
-                self._plugin_context['exit_code'] = self._exit_code
-                for app_plugin, plugin in self._current_plugins:
-                    if 'plugin_args' in app_plugin:
-                        plugin_args = app_plugin['plugin_args']
-                    else:
-                        plugin_args = None
-                    mod = __import__(plugin['module'].split('.')[0])
-                    for sub_mod in plugin['module'].split('.')[1:]:
-                        mod = getattr(mod, sub_mod)
-                    stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
-                    self._plugin_context = stop_plugin_attr(
-                        self._current_app_definition,
-                        self._plugin_context, plugin_args)
+            self.__stop_current()
         finally:
             self._launch = None
             self._plugin_launch = None
@@ -424,6 +379,34 @@ class AppManager(object):
             self._interface_sync.stop()
         finally:
             self._interface_sync = None
+
+    def __stop_current(self):
+        if self._api_sync:
+            self._api_sync.stop()
+        if self._launch:
+            self._launch.shutdown()
+            if (self._exit_code is None
+                    and len(self._launch.pm.dead_list) > 0):
+                self._exit_code = self._launch.pm.dead_list[0].exit_code
+            if self._exit_code > 0:
+                rospy.logerr(
+                    "App stopped with exit code: {}".format(self._exit_code))
+        if self._plugin_launch:
+            self._plugin_launch.shutdown()
+        if self._current_plugins:
+            self._plugin_context['exit_code'] = self._exit_code
+            for app_plugin, plugin in self._current_plugins:
+                if 'plugin_args' in app_plugin:
+                    plugin_args = app_plugin['plugin_args']
+                else:
+                    plugin_args = None
+                mod = __import__(plugin['module'].split('.')[0])
+                for sub_mod in plugin['module'].split('.')[1:]:
+                    mod = getattr(mod, sub_mod)
+                stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
+                self._plugin_context = stop_plugin_attr(
+                    self._current_app_definition,
+                    self._plugin_context, plugin_args)
 
     def handle_stop_app(self, req):
         rospy.loginfo("handle stop app: %s"%(req.name))
