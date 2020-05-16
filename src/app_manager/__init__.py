@@ -35,6 +35,7 @@
 from .app import AppDefinition
 from .app_manager import AppManager
 from .app_list import AppList, get_default_applist_directory
+from .app_manager_plugin import AppManagerPlugin
 from .exchange import Exchange
 from .exceptions import AppException, NotFoundException, \
      InvalidAppException, LaunchException, InternalAppException
