@@ -332,17 +332,18 @@ class AppManager(object):
             if self._current_plugins:
                 self._plugin_context = {}
                 for app_plugin, plugin in self._current_plugins:
-                    if 'plugin_args' in app_plugin:
-                        plugin_args = app_plugin['plugin_args']
-                    else:
-                        plugin_args = None
-                    mod = __import__(plugin['module'].split('.')[0])
-                    for sub_mod in plugin['module'].split('.')[1:]:
-                        mod = getattr(mod, sub_mod)
-                    start_plugin_attr = getattr(
-                        mod, 'app_manager_start_plugin')
-                    self._plugin_context = start_plugin_attr(
-                        app, self._plugin_context, plugin_args)
+                    if 'module' in plugin and plugin['module']:
+                        if 'plugin_args' in app_plugin:
+                            plugin_args = app_plugin['plugin_args']
+                        else:
+                            plugin_args = None
+                        mod = __import__(plugin['module'].split('.')[0])
+                        for sub_mod in plugin['module'].split('.')[1:]:
+                            mod = getattr(mod, sub_mod)
+                        start_plugin_attr = getattr(
+                            mod, 'app_manager_start_plugin')
+                        self._plugin_context = start_plugin_attr(
+                            app, self._plugin_context, plugin_args)
 
             # then launch main launch
             self._launch.start()
@@ -396,17 +397,18 @@ class AppManager(object):
         if self._current_plugins:
             self._plugin_context['exit_code'] = self._exit_code
             for app_plugin, plugin in self._current_plugins:
-                if 'plugin_args' in app_plugin:
-                    plugin_args = app_plugin['plugin_args']
-                else:
-                    plugin_args = None
-                mod = __import__(plugin['module'].split('.')[0])
-                for sub_mod in plugin['module'].split('.')[1:]:
-                    mod = getattr(mod, sub_mod)
-                stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
-                self._plugin_context = stop_plugin_attr(
-                    self._current_app_definition,
-                    self._plugin_context, plugin_args)
+                if 'module' in plugin and plugin['module']:
+                    if 'plugin_args' in app_plugin:
+                        plugin_args = app_plugin['plugin_args']
+                    else:
+                        plugin_args = None
+                    mod = __import__(plugin['module'].split('.')[0])
+                    for sub_mod in plugin['module'].split('.')[1:]:
+                        mod = getattr(mod, sub_mod)
+                    stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
+                    self._plugin_context = stop_plugin_attr(
+                        self._current_app_definition,
+                        self._plugin_context, plugin_args)
 
     def handle_stop_app(self, req):
         rospy.loginfo("handle stop app: %s"%(req.name))
