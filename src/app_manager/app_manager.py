@@ -34,7 +34,6 @@
 
 # author: leibs
 
-import logging
 import thread
 import time
 
@@ -61,8 +60,6 @@ def _load_config_default(
         roslaunch_files, port, roslaunch_strs=None, loader=None, verbose=False,
         assign_machines=True, ignore_unset_args=False
 ):
-    logger = logging.getLogger('roslaunch.config')
-
     config = roslaunch.config.ROSLaunchConfig()
     if port:
         config.master.uri = rosgraph.network.create_local_xmlrpc_uri(port)
@@ -82,7 +79,7 @@ def _load_config_default(
         else:
             args = None
         try:
-            logger.info('loading config file %s' % f)
+            rospy.loginfo('loading config file %s' % f)
             loader.load(f, config, argv=args, verbose=verbose)
         except roslaunch.xmlloader.XmlParseException as e:
             raise roslaunch.core.RLException(e)
@@ -93,7 +90,7 @@ def _load_config_default(
     if roslaunch_strs:
         for launch_str in roslaunch_strs:
             try:
-                logger.info('loading config file from string')
+                rospy.loginfo('loading config file from string')
                 loader.load_string(launch_str, config)
             except roslaunch.xmlloader.XmlParseException as e:
                 raise roslaunch.core.RLException(
