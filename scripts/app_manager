@@ -38,11 +38,11 @@ def main():
         if len(app_dirs) != 0:
             applist += app_dirs
             for app_dir in app_dirs:
-                rospy.loginfo('Loading app in {}'.format(app_dir))
+                rospy.logdebug('Loading app in {}'.format(app_dir))
         if len(plugin_yaml) != 0:
             plugin_yamls += plugin_yaml
             for plugin_y in plugin_yaml:
-                rospy.loginfo('Loading plugin in {}'.format(plugin_y))
+                rospy.logdebug('Loading plugin in {}'.format(plugin_y))
 
     if args.applist is not None:
         rospy.loginfo("Loading applist from --applist option")
