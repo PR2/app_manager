@@ -56,12 +56,10 @@ def main():
     if len(applist) == 0:
         rospy.logwarn('No applist directory found.')
 
-    plugins = None
+    plugins = []
     for plugin_yaml in plugin_yamls:
         with open(plugin_yaml) as f:
             plugin = yaml.safe_load(f)
-        if plugins is None:
-            plugins = []
         plugins += plugin
 
     robot_name = rospy.get_param('/robot/name', 'robot')
