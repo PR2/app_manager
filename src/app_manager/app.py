@@ -226,7 +226,7 @@ def _AppDefinition_load_clients_entry(app_data, appfile="UNKNOWN"):
 
 def _AppDefinition_load_plugins_entry(app_data, appfile="UNKNOWN"):
     """
-    @raise InvalidAppExcetion: if app definition is invalid.
+    @raise InvalidAppException: if app definition is invalid.
     """
     # load/validate launch entry
     try:
