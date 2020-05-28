@@ -329,9 +329,7 @@ class AppManager(object):
                 for t in app.interface.subscribed_topics.keys():
                     N.remap_args.append((t, self._app_interface + '/' + t))
 
-            # run plugin launches first
-            if self._plugin_launch:
-                self._plugin_launch.start()
+            # run plugin modules first
             if self._current_plugins:
                 self._plugin_context = {}
                 for app_plugin, plugin in self._current_plugins:
@@ -347,8 +345,11 @@ class AppManager(object):
                             mod, 'app_manager_start_plugin')
                         self._plugin_context = start_plugin_attr(
                             app, self._plugin_context, plugin_args)
+            # then, start plugin launches
+            if self._plugin_launch:
+                self._plugin_launch.start()
 
-            # then launch main launch
+            # finally launch main launch
             self._launch.start()
 
             fp = [self._app_interface + '/' + x for x in app.interface.subscribed_topics.keys()]
