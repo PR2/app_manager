@@ -285,23 +285,29 @@ class AppManager(object):
                 self._current_plugins = []
                 for app_plugin in app.plugins:
                     app_plugin_type = app_plugin['type']
-                    plugin = [p for p in self._plugins if p['name'] == app_plugin_type][0]
-                    self._current_plugins.append((app_plugin, plugin))
-                    if 'launch' in plugin and plugin['launch']:
-                        plugin_launch_file = find_resource(plugin['launch'])
-                        if 'launch_args' in app_plugin:
-                            plugin_launch_args = []
-                            for k, v in app_plugin['launch_args'].items():
-                                if isinstance(v, list):
-                                    v = " ".join(map(str, v))
-                                plugin_launch_args.append("{}:={}".format(k, v))
-                        else:
-                            plugin_launch_args = None
-                        rospy.loginfo(
-                            "Launching plugin: {} {}".format(
-                                plugin_launch_file, plugin_launch_args))
-                        plugin_launch_files.append(
-                            (plugin_launch_file, plugin_launch_args))
+                    try:
+                        plugin = next(
+                            p for p in self._plugins if p['name'] == app_plugin_type)
+                        self._current_plugins.append((app_plugin, plugin))
+                        if 'launch' in plugin and plugin['launch']:
+                            plugin_launch_file = find_resource(plugin['launch'])
+                            if 'launch_args' in app_plugin:
+                                plugin_launch_args = []
+                                for k, v in app_plugin['launch_args'].items():
+                                    if isinstance(v, list):
+                                        v = " ".join(map(str, v))
+                                    plugin_launch_args.append("{}:={}".format(k, v))
+                            else:
+                                plugin_launch_args = None
+                            rospy.loginfo(
+                                "Launching plugin: {} {}".format(
+                                    plugin_launch_file, plugin_launch_args))
+                            plugin_launch_files.append(
+                                (plugin_launch_file, plugin_launch_args))
+                    except StopIteration:
+                        rospy.logerr(
+                            'There is no available app_manager plugin: {}'
+                            .format(app_plugin_type))
 
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
             self._launch = roslaunch.parent.ROSLaunchParent(
