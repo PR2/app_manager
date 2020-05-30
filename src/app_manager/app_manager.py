@@ -334,10 +334,11 @@ class AppManager(object):
                 self._plugin_context = {}
                 for app_plugin, plugin in self._current_plugins:
                     if 'module' in plugin and plugin['module']:
+                        plugin_args = {}
                         if 'plugin_args' in app_plugin:
-                            plugin_args = app_plugin['plugin_args']
-                        else:
-                            plugin_args = None
+                            plugin_args.update(app_plugin['plugin_args'])
+                        if 'start_plugin_args' in app_plugin:
+                            plugin_args.update(app_plugin['start_plugin_args'])
                         mod = __import__(plugin['module'].split('.')[0])
                         for sub_mod in plugin['module'].split('.')[1:]:
                             mod = getattr(mod, sub_mod)
@@ -402,10 +403,11 @@ class AppManager(object):
             self._plugin_context['exit_code'] = self._exit_code
             for app_plugin, plugin in self._current_plugins:
                 if 'module' in plugin and plugin['module']:
+                    plugin_args = {}
                     if 'plugin_args' in app_plugin:
-                        plugin_args = app_plugin['plugin_args']
-                    else:
-                        plugin_args = None
+                        plugin_args.update(app_plugin['plugin_args'])
+                    if 'stop_plugin_args' in app_plugin:
+                        plugin_args.update(app_plugin['stop_plugin_args'])
                     mod = __import__(plugin['module'].split('.')[0])
                     for sub_mod in plugin['module'].split('.')[1:]:
                         mod = getattr(mod, sub_mod)
