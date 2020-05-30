@@ -292,14 +292,22 @@ class AppManager(object):
                         self._current_plugins.append((app_plugin, plugin))
                         if 'launch' in plugin and plugin['launch']:
                             plugin_launch_file = find_resource(plugin['launch'])
+                            launch_args = {}
                             if 'launch_args' in app_plugin:
-                                plugin_launch_args = []
-                                for k, v in app_plugin['launch_args'].items():
-                                    if isinstance(v, list):
-                                        v = " ".join(map(str, v))
-                                    plugin_launch_args.append("{}:={}".format(k, v))
-                            else:
-                                plugin_launch_args = None
+                                launch_args.update(app_plugin['launch_args'])
+                            if 'launch_arg_yaml' in app_plugin:
+                                with open(app_plugin['launch_arg_yaml']) as yaml_f:
+                                    yaml_launch_args = yaml.load(yaml_f)
+                                for k, v in yaml_launch_args.items():
+                                    if k in launch_args:
+                                        rospy.logwarn("'{}' is set both in launch_args and launch_arg_yaml".format(k))
+                                        rospy.logwarn("'{}' is overwritten: {} -> {}".format(k, launch_args[k], v))
+                                    launch_args[k] = v
+                            plugin_launch_args = []
+                            for k, v in launch_args.items():
+                                if isinstance(v, list):
+                                    v = " ".join(map(str, v))
+                                plugin_launch_args.append("{}:={}".format(k, v))
                             rospy.loginfo(
                                 "Launching plugin: {} {}".format(
                                     plugin_launch_file, plugin_launch_args))
