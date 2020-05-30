@@ -284,7 +284,23 @@ class AppManager(object):
             plugin_launch_files = []
             if app.plugins:
                 self._current_plugins = []
-                for app_plugin in app.plugins:
+                if 'start_plugin_order' in app.plugin_order:
+                    plugin_names = [p['name'] for p in app.plugins]
+                    plugin_order = app.plugin_order['start_plugin_order']
+                    if len(set(plugin_names) - set(plugin_order)) > 0:
+                        rospy.logwarn(
+                            "Some plugins are defined in plugins but not written in start_plugin_order: {}"
+                            .format(set(plugin_names) - set(plugin_order)))
+                    app_plugins = []
+                    for plugin_name in plugin_order:
+                        if plugin_name not in plugin_names:
+                            rospy.logerr("app plugin '{}' not found in app file.".format(plugin_name))
+                            continue
+                        app_plugins.append(
+                            app.plugins[plugin_names.index(plugin_name)])
+                else:
+                    app_plugins = app.plugins
+                for app_plugin in app_plugins:
                     app_plugin_type = app_plugin['type']
                     try:
                         plugin = next(
@@ -428,7 +444,27 @@ class AppManager(object):
             self._plugin_launch.shutdown()
         if self._current_plugins:
             self._plugin_context['exit_code'] = self._exit_code
-            for app_plugin, plugin in self._current_plugins:
+            if 'stop_plugin_order' in self._current_app_definition.plugin_order:
+                plugin_names = [p['name'] for p in self._current_app_definition.plugins]
+                plugin_order = self._current_app_definition.plugin_order['stop_plugin_order']
+                if len(set(plugin_names) - set(plugin_order)) > 0:
+                    rospy.logwarn(
+                        "Some plugins are defined in plugins but not written in stop_plugin_order: {}"
+                        .format(set(plugin_names) - set(plugin_order)))
+                current_plugins = []
+                for plugin_name in plugin_order:
+                    if plugin_name not in plugin_names:
+                        rospy.logerr("app plugin '{}' not found in app file.".format(plugin_name))
+                        continue
+                    current_plugin_names = [p['name'] for p, _ in self._current_plugins]
+                    if plugin_name not in current_plugin_names:
+                        rospy.logwarn("app plugin '{}' is not running, so skip stopping".format(plugin_name))
+                        continue
+                    current_plugins.append(
+                        self._current_plugins[current_plugin_names.index(plugin_name)])
+            else:
+                current_plugins = self._current_plugins
+            for app_plugin, plugin in current_plugins:
                 if 'module' in plugin and plugin['module']:
                     plugin_args = {}
                     stop_plugin_args = {}
