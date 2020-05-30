@@ -36,6 +36,7 @@
 
 import thread
 import time
+import yaml
 
 import rosgraph.names
 import rospy
@@ -335,10 +336,28 @@ class AppManager(object):
                 for app_plugin, plugin in self._current_plugins:
                     if 'module' in plugin and plugin['module']:
                         plugin_args = {}
+                        start_plugin_args = {}
                         if 'plugin_args' in app_plugin:
                             plugin_args.update(app_plugin['plugin_args'])
+                        if 'plugin_arg_yaml' in app_plugin:
+                            with open(app_plugin['plugin_arg_yaml']) as yaml_f:
+                                yaml_plugin_args = yaml.load(yaml_f)
+                            for k, v in yaml_plugin_args.items():
+                                if k in plugin_args:
+                                    rospy.logwarn("'{}' is set both in plugin_args and plugin_arg_yaml".format(k))
+                                    rospy.logwarn("'{}' is overwritten: {} -> {}".format(k, plugin_args[k], v))
+                                plugin_args[k] = v
                         if 'start_plugin_args' in app_plugin:
-                            plugin_args.update(app_plugin['start_plugin_args'])
+                            start_plugin_args.update(app_plugin['start_plugin_args'])
+                        if 'start_plugin_arg_yaml' in app_plugin:
+                            with open(app_plugin['start_plugin_arg_yaml']) as yaml_f:
+                                yaml_plugin_args = yaml.load(yaml_f)
+                            for k, v in yaml_plugin_args.items():
+                                if k in start_plugin_args:
+                                    rospy.logwarn("'{}' is set both in start_plugin_args and start_plugin_arg_yaml".format(k))
+                                    rospy.logwarn("'{}' is overwritten: {} -> {}".format(k, start_plugin_args[k], v))
+                                start_plugin_args[k] = v
+                        plugin_args.update(start_plugin_args)
                         mod = __import__(plugin['module'].split('.')[0])
                         for sub_mod in plugin['module'].split('.')[1:]:
                             mod = getattr(mod, sub_mod)
@@ -404,10 +423,28 @@ class AppManager(object):
             for app_plugin, plugin in self._current_plugins:
                 if 'module' in plugin and plugin['module']:
                     plugin_args = {}
+                    stop_plugin_args = {}
                     if 'plugin_args' in app_plugin:
                         plugin_args.update(app_plugin['plugin_args'])
+                    if 'plugin_arg_yaml' in app_plugin:
+                        with open(app_plugin['plugin_arg_yaml']) as yaml_f:
+                            yaml_plugin_args = yaml.load(yaml_f)
+                        for k, v in yaml_plugin_args.items():
+                            if k in plugin_args:
+                                rospy.logwarn("'{}' is set both in plugin_args and plugin_arg_yaml".format(k))
+                                rospy.logwarn("'{}' is overwritten: {} -> {}".format(k, plugin_args[k], v))
+                            plugin_args[k] = v
                     if 'stop_plugin_args' in app_plugin:
-                        plugin_args.update(app_plugin['stop_plugin_args'])
+                        stop_plugin_args.update(app_plugin['stop_plugin_args'])
+                    if 'stop_plugin_arg_yaml' in app_plugin:
+                        with open(app_plugin['stop_plugin_arg_yaml']) as yaml_f:
+                            yaml_plugin_args = yaml.load(yaml_f)
+                        for k, v in yaml_plugin_args.items():
+                            if k in stop_plugin_args:
+                                rospy.logwarn("'{}' is set both in stop_plugin_args and stop_plugin_arg_yaml".format(k))
+                                rospy.logwarn("'{}' is overwritten: {} -> {}".format(k, stop_plugin_args[k], v))
+                            stop_plugin_args[k] = v
+                    plugin_args.update(stop_plugin_args)
                     mod = __import__(plugin['module'].split('.')[0])
                     for sub_mod in plugin['module'].split('.')[1:]:
                         mod = getattr(mod, sub_mod)
