@@ -129,7 +129,13 @@ namespace: "/robot/application"
 You can define `app_manager` plugins as below in app file such as `test.app`.
 
 ```yaml
-plugins: # plugin definitions
+# app definitions
+display: Test app
+platform: all
+launch: test_app_manager/test_app.xml
+interface: test_app_manager/test_app.interface
+# plugin definitions
+plugins:
   - name: mail_notifier_plugin  # name to identify this plugin
     type: app_notifier/mail_notifier_plugin  # plugin type
     launch_args:  # arguments for plugin launch file
