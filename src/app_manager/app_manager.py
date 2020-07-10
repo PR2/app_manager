@@ -140,7 +140,7 @@ class AppManager(object):
         if (self._exchange == None):
             return None
         if (req.remote_update):
-            print("UPDATE")
+            rospy.loginfo("UPDATE")
             if (not self._exchange.update()):
                 return None
         i_apps = self._exchange.get_installed_apps()
