@@ -36,7 +36,7 @@
 import sys
 
 if sys.version_info[0] == 3:
-    import _thread # python3 renamed from thread to _thread
+    import _thread as thread  # python3 renamed from thread to _thread
 else:
     import thread
 
