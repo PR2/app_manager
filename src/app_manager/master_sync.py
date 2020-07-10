@@ -1,7 +1,7 @@
 import sys
 
 if sys.version_info[0] == 3:
-    from urllib.parse import urlparse # python3 renamed from thread to _thread
+    from urllib.parse import urlparse  # python3 move urlparse to urllib.parse
 else:
     import urlparse
 
