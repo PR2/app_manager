@@ -49,7 +49,7 @@ from std_msgs.msg import String
 from .msg import ExchangeApp, Icon
 
 class Exchange():
-    def __init__(self, url, directory, on_error = lambda(x): None):
+    def __init__(self, url, directory, on_error = lambda x: None):
         self._url = url
         self._directory = directory
         self._on_error = on_error
@@ -62,10 +62,10 @@ class Exchange():
         if (not os.path.exists(d)):
             os.mkdir(d)
         self._exchange_file = os.path.join(d, "app_exchange.installed")
-        print "Directory:", self._directory
-        print "Local path:", self._exchange_local
-        print "Local file:", self._exchange_file
-        print subprocess.Popen(["whoami"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        rospy.loginfo("Directory: {}".format(self._directory))
+        rospy.loginfo("Local path: {}".format(self._exchange_local))
+        rospy.loginfo("Local file: {}".format(self._exchange_file))
+        rospy.loginfo(subprocess.Popen(["whoami"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate())
 
     def get_installed_version(self, deb):
         data = subprocess.Popen(["dpkg", "-l", deb], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
@@ -109,15 +109,15 @@ class Exchange():
             os.makedirs(local_path)
         data = subprocess.Popen(["wget", "-O", os.path.join(local_path, "app.yaml"), (self._url.strip('/') + "/" + name + ".yaml")], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         val = (data[0] or '').strip()        
-        print val
+        rospy.logwarn(val)
         try:
             data = yaml.load(open(os.path.join(local_path, "app.yaml")))
             icon_url = data["icon_url"]
             icon_format = data["icon_format"]
             val = (subprocess.Popen(["wget", "-O", os.path.join(local_path, "icon" + icon_format), icon_url], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()     
-            print val
+            rospy.logwarn(val)
         except:
-            print "No icon"
+            rospy.logerr("No icon")
         self.update_local()
         for i in self._available_apps:
             if (i.name == name):
@@ -143,7 +143,7 @@ class Exchange():
         if (deb == False):
             self._on_error("No debian found for install")
             return False
-        print "install app"
+        rospy.loginfo("install app")
         p = subprocess.Popen(["sudo", "rosget", "install", deb], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         #data = p.communicate()
         #data = "test string"
@@ -165,7 +165,7 @@ class Exchange():
 
         data = (''.join(l1), ''.join(l2))
         val = (data[0] or '').strip()
-        print val
+        rospy.logwarn(val)
         self.update_local()
         for i in self._installed_apps:
             if (i.name == app):
@@ -183,7 +183,7 @@ class Exchange():
         if (deb == False):
             self._on_error("No debian found for uninstall")
             return False
-        print "uninstall app"
+        rospy.loginfo("uninstall app")
         data = subprocess.Popen(["sudo", "rosget", "remove", deb], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         val = (data[0] or '').strip()
         self.update_local()
@@ -197,8 +197,7 @@ class Exchange():
         #Call server
         val = (subprocess.Popen(["wget", "-O", self._exchange_local, self._url + "/applications.yaml"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
         if (val != "" or not os.path.exists(self._exchange_local)):
-            print sys.stderr >> val
-            print sys.stderr >> "Wget failed"
+            rospy.logerr("Wget failed: {}".format(val))
             return False
                
         p = subprocess.Popen(["sudo", "rosget", "update"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -239,7 +238,7 @@ class Exchange():
             if (os.path.exists(local_path)):
                 format = ""
                 if (os.path.exists(os.path.join(local_path, "app.yaml"))):
-                    print local_path
+                    rospy.logwarn(local_path)
                     data = yaml.load(open(os.path.join(local_path, "app.yaml")))
                     try:
                         appc.description = data['description']

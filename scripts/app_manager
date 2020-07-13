@@ -85,7 +85,7 @@ def main():
             app_path = os.path.join(rospkg.get_ros_home(), "exchange")
             if (not os.path.exists(app_path)):
                 os.makedirs(app_path)
-            exchange = app_manager.Exchange(exchange_url, app_path, lambda(x): rospy.logerr(x))
+            exchange = app_manager.Exchange(exchange_url, app_path, lambda x: rospy.logerr(x))
             app_list.add_directory(os.path.join(app_path, "installed"))
         except app_manager.AppException as e:
             rospy.logerr("Failed to load exchange: {}".format(e))

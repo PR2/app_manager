@@ -33,8 +33,13 @@
 # Revision $Id: app_manager.py 14948 2011-09-07 19:25:54Z pratkanis $
 
 # author: leibs
+import sys
 
-import thread
+if sys.version_info[0] == 3:
+    import _thread as thread  # python3 renamed from thread to _thread
+else:
+    import thread
+
 import time
 import yaml
 
@@ -202,7 +207,7 @@ class AppManager(object):
         if (self._exchange == None):
             return None
         if (req.remote_update):
-            print "UPDATE"
+            rospy.loginfo("UPDATE")
             if (not self._exchange.update()):
                 return None
         i_apps = self._exchange.get_installed_apps()

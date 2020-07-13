@@ -56,7 +56,7 @@ def get_default_applist_directory():
 
 def dict_to_KeyValue(d):
     l = []
-    for k, v in d.iteritems():
+    for k, v in d.items():
         l.append(KeyValue(k, str(v)))
     return l
 

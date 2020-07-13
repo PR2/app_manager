@@ -1,6 +1,13 @@
+import sys
+
+if sys.version_info[0] == 3:
+    from urllib.parse import urlparse  # python3 move urlparse to urllib.parse
+else:
+    import urlparse
+
+
 import threading
 import time
-import urlparse
 
 import rosgraph
 import rosgraph.names
