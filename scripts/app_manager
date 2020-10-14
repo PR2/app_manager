@@ -91,11 +91,11 @@ def main():
             rospy.logerr("Failed to load exchange: {}".format(e))
             sys.exit(1)
 
-    enable_overwrite = rospy.get_param('~enable_overwrite', True)
+    enable_app_replacement = rospy.get_param('~enable_app_replacement', True)
 
     am = app_manager.AppManager(
         robot_name, interface_master, app_list, exchange, plugins,
-        enable_overwrite=enable_overwrite)
+        enable_app_replacement=enable_app_replacement)
 
     rospy.on_shutdown(am.shutdown)
 

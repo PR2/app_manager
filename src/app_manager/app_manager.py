@@ -119,7 +119,7 @@ class AppManager(object):
 
     def __init__(
             self, robot_name, interface_master, app_list,
-            exchange, plugins=None, enable_overwrite=True,
+            exchange, plugins=None, enable_app_replacement=True,
     ):
         self._robot_name = robot_name
         self._interface_master = interface_master
@@ -127,7 +127,7 @@ class AppManager(object):
         self._current_app = self._current_app_definition = None
         self._exchange = exchange
         self._plugins = plugins
-        self._enable_overwrite = enable_overwrite
+        self._enable_app_replacement = enable_app_replacement
             
         rospy.loginfo("Starting app manager for %s"%self._robot_name)
 
@@ -264,7 +264,7 @@ class AppManager(object):
         if self._current_app:
             if self._current_app_definition.name == req.name:
                 return StartAppResponse(started=True, message="app [%s] already started"%(req.name), namespace=self._app_interface)
-            elif not self._enable_overwrite:
+            elif not self._enable_app_replacement:
                 return StartAppResponse(
                     started=False,
                     message="app [%s] is denied because app [%s] is already running."
