@@ -273,7 +273,6 @@ class AppManager(object):
                     error_code=StatusCodes.MULTIAPP_NOT_SUPPORTED)
             else:
                 self.stop_app(self._current_app_definition.name)
-            #return StartAppResponse(started=False, message="Please stop the running app before starting another app.", error_code=StatusCodes.MULTIAPP_NOT_SUPPORTED)
 
         # TODO: the app list has already loaded the App data.  We should use that instead for consistency
 
