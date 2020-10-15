@@ -119,7 +119,7 @@ class AppManager(object):
 
     def __init__(
             self, robot_name, interface_master, app_list,
-            exchange, plugins=None
+            exchange, plugins=None, enable_app_replacement=True,
     ):
         self._robot_name = robot_name
         self._interface_master = interface_master
@@ -127,6 +127,7 @@ class AppManager(object):
         self._current_app = self._current_app_definition = None
         self._exchange = exchange
         self._plugins = plugins
+        self._enable_app_replacement = enable_app_replacement
             
         rospy.loginfo("Starting app manager for %s"%self._robot_name)
 
@@ -263,9 +264,15 @@ class AppManager(object):
         if self._current_app:
             if self._current_app_definition.name == req.name:
                 return StartAppResponse(started=True, message="app [%s] already started"%(req.name), namespace=self._app_interface)
+            elif not self._enable_app_replacement:
+                return StartAppResponse(
+                    started=False,
+                    message="app [%s] is denied because app [%s] is already running."
+                            % (req.name, self._current_app_definition.name),
+                    namespace=self._app_interface,
+                    error_code=StatusCodes.MULTIAPP_NOT_SUPPORTED)
             else:
                 self.stop_app(self._current_app_definition.name)
-            #return StartAppResponse(started=False, message="Please stop the running app before starting another app.", error_code=StatusCodes.MULTIAPP_NOT_SUPPORTED)
 
         # TODO: the app list has already loaded the App data.  We should use that instead for consistency
 
