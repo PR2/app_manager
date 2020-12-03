@@ -168,6 +168,7 @@ class AppManager(object):
         self._exit_code = None
         self._current_plugins = None
         self._plugin_context = None
+        self._start_time = None
 
         roslaunch.pmon._init_signal_handlers()
 
@@ -407,6 +408,8 @@ class AppManager(object):
 
             # finally launch main launch
             self._launch.start()
+            if app.timeout is not None:
+                self._start_time = rospy.Time.now()
 
             fp = [self._app_interface + '/' + x for x in app.interface.subscribed_topics.keys()]
             lp = [self._app_interface + '/' + x for x in app.interface.published_topics.keys()]
@@ -436,6 +439,7 @@ class AppManager(object):
             self._exit_code = None
             self._current_plugins = None
             self._plugin_context = None
+            self._start_time = None
         try:
             self._interface_sync.stop()
         finally:
@@ -527,6 +531,9 @@ class AppManager(object):
         while self._launch:
             time.sleep(0.1)
             launch = self._launch
+            timeout = self._current_app_definition.timeout
+            appname = self._current_app_definition.name
+            now = rospy.Time.now()
             if launch:
                 pm = launch.pm
                 if pm:
@@ -538,8 +545,16 @@ class AppManager(object):
                             self._exit_code = max(exit_codes)
                     if pm.done:
                         time.sleep(1.0)
-                        self.stop_app(self._current_app_definition.name)
+                        self.stop_app(appname)
                         break
+                if (timeout is not None and
+                        self._start_time is not None and
+                        (now - self._start_time).to_sec() > timeout):
+                    self.stop_app(appname)
+                    rospy.logerr(
+                        'app {} is stopped because of timeout: {}s'.format(
+                            appname, timeout))
+                    break
 
 
 
