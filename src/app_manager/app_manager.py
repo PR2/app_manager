@@ -166,6 +166,7 @@ class AppManager(object):
         self._plugin_launch = None
         self._interface_sync = None
         self._exit_code = None
+        self._stopped = None
         self._current_plugins = None
         self._plugin_context = None
         self._start_time = None
@@ -184,6 +185,7 @@ class AppManager(object):
             self._api_sync.stop()
         if self._interface_sync:
             self._interface_sync.stop()
+        self._stopped = True
         self.__stop_current()
 
     def _get_current_app(self):
@@ -437,6 +439,7 @@ class AppManager(object):
             self._launch = None
             self._plugin_launch = None
             self._exit_code = None
+            self._stopped = None
             self._current_plugins = None
             self._plugin_context = None
             self._start_time = None
@@ -460,6 +463,7 @@ class AppManager(object):
             self._plugin_launch.shutdown()
         if self._current_plugins:
             self._plugin_context['exit_code'] = self._exit_code
+            self._plugin_context['stopped'] = self._stopped
             if 'stop_plugin_order' in self._current_app_definition.plugin_order:
                 plugin_names = [p['name'] for p in self._current_app_definition.plugins]
                 plugin_order = self._current_app_definition.plugin_order['stop_plugin_order']
@@ -515,6 +519,7 @@ class AppManager(object):
 
     def handle_stop_app(self, req):
         rospy.loginfo("handle stop app: %s"%(req.name))
+        self._stopped = True
         return self.stop_app(req.name)
 
     def handle_reload_app_list(self, req=None):
