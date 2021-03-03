@@ -2,8 +2,8 @@
 Changelog for package app_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.2.0 (2021-03-03)
+------------------
 * Merge pull request `#29 <https://github.com/pr2/app_manager/issues/29>`_ from knorth55/add-stopped
 * Merge pull request `#28 <https://github.com/pr2/app_manager/issues/28>`_ from knorth55/add-timeout
 * Merge pull request `#30 <https://github.com/pr2/app_manager/issues/30>`_ from knorth55/add-all-availables
