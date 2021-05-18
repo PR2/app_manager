@@ -2,6 +2,67 @@
 Changelog for package app_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.0 (2021-03-03)
+------------------
+* Merge pull request `#29 <https://github.com/pr2/app_manager/issues/29>`_ from knorth55/add-stopped
+* Merge pull request `#28 <https://github.com/pr2/app_manager/issues/28>`_ from knorth55/add-timeout
+* Merge pull request `#30 <https://github.com/pr2/app_manager/issues/30>`_ from knorth55/add-all-availables
+  add available_apps in all platform apps
+* add available_apps in all platform apps
+* add stopped context in app_manager plugin
+* add timeout field in app file
+* add enable_app_replacement param in app_manager (`#26 <https://github.com/pr2/app_manager/issues/26>`_)
+  This allows for both behaviors (replace currently running app or error out) and let's users choose without changing code...
+* add noetic test and also checks python 2/3 compatibility (`#24 <https://github.com/pr2/app_manager/issues/24>`_)
+  * add noetic test and also checks python 2/3 compatibility
+  * fix to support both python 2/3
+  * use rospy.log** instead of print
+  Co-authored-by: Shingo Kitagawa <shingogo@hotmail.co.jp>
+* Add app manager plugin (`#25 <https://github.com/pr2/app_manager/issues/25>`_)
+  Enable aspect-oriented modelling, e.g.
+  - send a mail when someone starts an app
+  - auto-record rosbags during app run
+  - auto-upload files on app-close
+  ...
+  * start plugin launch in app_manager
+  * start and stop plugin function
+  * pass app in plugin functions
+  * add exit_code in stop_plugin_attr
+  * stop plugin functions when shutdown is called
+  * launch when plugin
+  * load plugin launch when it exists
+  * use ctx instead of exit_code
+  * pass exit_code to ctx
+  * add plugins in AppDefinition
+  * add _current_plugins and _plugin_context
+  * pass launch arguments
+  * add plugin_args for app plugins
+  * overwrite roslaunch.config.load_config_default for kinetic
+  * add __stop_current for shutdown and __stop_current
+  * support "module: null" syntax for app definition
+  * add app_manager plugin base class
+  * refactor scripts/app_manager
+  * add start_plugin_args and stop_plugin_args
+  * add start_plugin_arg_yaml and stop_plugin_arg_yaml
+  * add launch_arg_yaml
+  * add plugin_order to set plugin order
+  * update readme to add plugin doc
+  * update readme to add app definitions
+* fix readme (`#23 <https://github.com/pr2/app_manager/issues/23>`_)
+* add exit_code log in app_manager (`#22 <https://github.com/pr2/app_manager/issues/22>`_)
+  add exit_code log in app_manager
+  During successful execution, `dead_list` should always end up empty.
+* add all platform for all robots (`#17 <https://github.com/pr2/app_manager/issues/17>`_)
+  add an additional keyword to explicitly support 'all' platforms
+* use rospack to search for app_manager app_dir (`#19 <https://github.com/pr2/app_manager/issues/19>`_)
+  * use rospack to search for app_manager app_dir
+  * remove unused imports
+  * use both --applist and plugin app_dir
+* Merge pull request `#20 <https://github.com/pr2/app_manager/issues/20>`_ from knorth55/fix-print-python3
+  use rospy.logerr to escape print error in python3
+* use rospy.logerr to escape print error in python3
+* Contributors: Kei Okada, Michael Görner, Shingo Kitagawa
+
 1.1.1 (2020-04-13)
 ------------------
 * use python3.5 for travis (`#18 <https://github.com/pr2/app_manager/issues/18>`_)

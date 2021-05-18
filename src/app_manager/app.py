@@ -75,9 +75,11 @@ class Client(object):
                
 class AppDefinition(object):
     __slots__ = ['name', 'display_name', 'description', 'platform',
-                 'launch', 'interface', 'clients', 'icon', 'plugins', 'plugin_order']
+                 'launch', 'interface', 'clients', 'icon', 'plugins', 'plugin_order',
+                 'timeout']
     def __init__(self, name, display_name, description, platform,
-                 launch, interface, clients, icon=None, plugins=None, plugin_order=None):
+                 launch, interface, clients, icon=None, plugins=None, plugin_order=None,
+                 timeout=None):
         self.name = name
         self.display_name = display_name
         self.description = description
@@ -88,6 +90,7 @@ class AppDefinition(object):
         self.icon = icon
         self.plugins = plugins
         self.plugin_order = plugin_order
+        self.timeout = timeout
 
     def __repr__(self):
         d = {}
@@ -253,6 +256,21 @@ def _AppDefinition_load_plugin_order_entry(app_data, appfile="UNKNOWN"):
         raise InvalidAppException("Malformed appfile [%s]: bad plugin_order entry: %s"%(appfile, e))
 
 
+def _AppDefinition_load_timeout_entry(app_data, appfile="UNKNOWN"):
+    """
+    @raise InvalidAppException: if app definition is invalid.
+    """
+    # load/validate launch entry
+    try:
+        timeout = app_data.get('timeout', '')
+        if timeout == '':
+            return None
+        return timeout
+    except ValueError as e:
+        raise InvalidAppException("Malformed appfile [%s]: bad timeout entry: %s"%(appfile, e))
+
+
+
 def load_AppDefinition_from_file(appfile, appname):
     """
     @raise InvalidAppExcetion: if app definition is invalid.
@@ -275,10 +293,11 @@ def load_AppDefinition_from_file(appfile, appname):
         icon = _AppDefinition_load_icon_entry(app_data, appfile)
         plugins = _AppDefinition_load_plugins_entry(app_data, appfile)
         plugin_order = _AppDefinition_load_plugin_order_entry(app_data, appfile)
+        timeout = _AppDefinition_load_timeout_entry(app_data, appfile)
 
     return AppDefinition(appname, display_name, description, platform,
                          launch, interface, clients, icon,
-                         plugins, plugin_order)
+                         plugins, plugin_order, timeout)
     
 def load_AppDefinition_by_name(appname):
     """

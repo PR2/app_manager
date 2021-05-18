@@ -166,8 +166,10 @@ class AppManager(object):
         self._plugin_launch = None
         self._interface_sync = None
         self._exit_code = None
+        self._stopped = None
         self._current_plugins = None
         self._plugin_context = None
+        self._start_time = None
 
         roslaunch.pmon._init_signal_handlers()
 
@@ -183,6 +185,7 @@ class AppManager(object):
             self._api_sync.stop()
         if self._interface_sync:
             self._interface_sync.stop()
+        self._stopped = True
         self.__stop_current()
 
     def _get_current_app(self):
@@ -416,6 +419,8 @@ class AppManager(object):
 
             # finally launch main launch
             self._launch.start()
+            if app.timeout is not None:
+                self._start_time = rospy.Time.now()
 
             fp = [self._app_interface + '/' + x for x in app.interface.subscribed_topics.keys()]
             lp = [self._app_interface + '/' + x for x in app.interface.published_topics.keys()]
@@ -443,8 +448,10 @@ class AppManager(object):
             self._launch = None
             self._plugin_launch = None
             self._exit_code = None
+            self._stopped = None
             self._current_plugins = None
             self._plugin_context = None
+            self._start_time = None
         try:
             self._interface_sync.stop()
         finally:
@@ -465,6 +472,7 @@ class AppManager(object):
             self._plugin_launch.shutdown()
         if self._current_plugins:
             self._plugin_context['exit_code'] = self._exit_code
+            self._plugin_context['stopped'] = self._stopped
             if 'stop_plugin_order' in self._current_app_definition.plugin_order:
                 plugin_names = [p['name'] for p in self._current_app_definition.plugins]
                 plugin_order = self._current_app_definition.plugin_order['stop_plugin_order']
@@ -520,6 +528,7 @@ class AppManager(object):
 
     def handle_stop_app(self, req):
         rospy.loginfo("handle stop app: %s"%(req.name))
+        self._stopped = True
         return self.stop_app(req.name)
 
     def handle_reload_app_list(self, req=None):
@@ -536,6 +545,9 @@ class AppManager(object):
         while self._launch:
             time.sleep(0.1)
             launch = self._launch
+            timeout = self._current_app_definition.timeout
+            appname = self._current_app_definition.name
+            now = rospy.Time.now()
             if launch:
                 pm = launch.pm
                 if pm:
@@ -547,8 +559,16 @@ class AppManager(object):
                             self._exit_code = max(exit_codes)
                     if pm.done:
                         time.sleep(1.0)
-                        self.stop_app(self._current_app_definition.name)
+                        self.stop_app(appname)
                         break
+                if (timeout is not None and
+                        self._start_time is not None and
+                        (now - self._start_time).to_sec() > timeout):
+                    self.stop_app(appname)
+                    rospy.logerr(
+                        'app {} is stopped because of timeout: {}s'.format(
+                            appname, timeout))
+                    break
 
 
 
