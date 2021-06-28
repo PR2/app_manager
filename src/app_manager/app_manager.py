@@ -555,6 +555,7 @@ class AppManager(object):
                 if (timeout is not None and
                         self._start_time is not None and
                         (now - self._start_time).to_sec() > timeout):
+                    self._stopped = True
                     self.stop_app(appname)
                     rospy.logerr(
                         'app {} is stopped because of timeout: {}s'.format(
