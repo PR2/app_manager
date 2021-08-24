@@ -43,7 +43,7 @@ install:
   - mkdir -p $JOB_PATH/ws/src
   - cp -R $TRAVIS_BUILD_DIR $JOB_PATH/ws/src/
   # generate the script to run a pre-release job for that target and repo
-  - generate_prerelease_script.py $INDEX_URL $ROS_DISTRO_NAME default $OS_NAME $OS_CODE_NAME $ARCH  --output-dir $JOB_PATH --custom-rosdep-update-options=--include-eol-distros
+  - python /tmp/ros_buildfarm/scripts/generate_prerelease_script.py $INDEX_URL $ROS_DISTRO_NAME default $OS_NAME $OS_CODE_NAME $ARCH  --output-dir $JOB_PATH --custom-rosdep-update-options=--include-eol-distros
   # run the actual job which involves Docker
   - cd $JOB_PATH; sh ./prerelease.sh -y
 script:
