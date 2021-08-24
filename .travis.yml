@@ -22,7 +22,7 @@ env:
 #     allow_failures:
 #       - env: ROS_DISTRO_NAME=kinetic OS_NAME=ubuntu OS_CODE_NAME=xenial ARCH=amd64
 install:
-  # check python3 compatibility
+  # check python2 compatibility
   - if [ "${CHECK_PYTHON2_COMPILE}" == "true" ]; then python2 -m compileall . ; exit $?; fi
   # check python3 compatibility
   - if [ "${CHECK_PYTHON3_COMPILE}" == "true" ]; then python3 -m compileall . ; exit $?; fi
@@ -43,7 +43,7 @@ install:
   - mkdir -p $JOB_PATH/ws/src
   - cp -R $TRAVIS_BUILD_DIR $JOB_PATH/ws/src/
   # generate the script to run a pre-release job for that target and repo
-  - python /tmp/ros_buildfarm/scripts/generate_prerelease_script.py $INDEX_URL $ROS_DISTRO_NAME default $OS_NAME $OS_CODE_NAME $ARCH  --output-dir $JOB_PATH --custom-rosdep-update-options=--include-eol-distros
+  - python /tmp/ros_buildfarm/scripts/prerelease/generate_prerelease_script.py $INDEX_URL $ROS_DISTRO_NAME default $OS_NAME $OS_CODE_NAME $ARCH  --output-dir $JOB_PATH --custom-rosdep-update-options=--include-eol-distros
   # run the actual job which involves Docker
   - cd $JOB_PATH; sh ./prerelease.sh -y
 script:
