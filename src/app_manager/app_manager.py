@@ -169,6 +169,7 @@ class AppManager(object):
         self._stopped = None
         self._current_plugins = None
         self._plugin_context = None
+        self._plugin_insts = None
         self._start_time = None
 
         roslaunch.pmon._init_signal_handlers()
@@ -381,6 +382,7 @@ class AppManager(object):
             # run plugin modules first
             if self._current_plugins:
                 self._plugin_context = {}
+                self._plugin_insts = {}
                 for app_plugin, plugin in self._current_plugins:
                     if 'module' in plugin and plugin['module']:
                         plugin_args = {}
@@ -409,10 +411,10 @@ class AppManager(object):
                         mod = __import__(plugin['module'].split('.')[0])
                         for sub_mod in plugin['module'].split('.')[1:]:
                             mod = getattr(mod, sub_mod)
-                        start_plugin_attr = getattr(
-                            mod, 'app_manager_start_plugin')
-                        self._plugin_context = start_plugin_attr(
+                        plugin_inst = mod()
+                        plugin_inst.app_manager_start_plugin(
                             app, self._plugin_context, plugin_args)
+                        self._plugin_insts[plugin['module']] = plugin_inst
             # then, start plugin launches
             if self._plugin_launch:
                 self._plugin_launch.start()
@@ -451,6 +453,7 @@ class AppManager(object):
             self._stopped = None
             self._current_plugins = None
             self._plugin_context = None
+            self._plugin_insts = None
             self._start_time = None
         try:
             self._interface_sync.stop()
@@ -518,11 +521,14 @@ class AppManager(object):
                                 rospy.logwarn("'{}' is overwritten: {} -> {}".format(k, stop_plugin_args[k], v))
                             stop_plugin_args[k] = v
                     plugin_args.update(stop_plugin_args)
-                    mod = __import__(plugin['module'].split('.')[0])
-                    for sub_mod in plugin['module'].split('.')[1:]:
-                        mod = getattr(mod, sub_mod)
-                    stop_plugin_attr = getattr(mod, 'app_manager_stop_plugin')
-                    self._plugin_context = stop_plugin_attr(
+                    if plugin['module'] in self._plugin_insts:
+                        plugin_inst = self._plugin_insts[plugin['module']]
+                    else:
+                        mod = __import__(plugin['module'].split('.')[0])
+                        for sub_mod in plugin['module'].split('.')[1:]:
+                            mod = getattr(mod, sub_mod)
+                        plugin_inst = mod()
+                    plugin_inst.app_manager_stop_plugin(
                         self._current_app_definition,
                         self._plugin_context, plugin_args)
 
@@ -564,6 +570,7 @@ class AppManager(object):
                 if (timeout is not None and
                         self._start_time is not None and
                         (now - self._start_time).to_sec() > timeout):
+                    self._stopped = True
                     self.stop_app(appname)
                     rospy.logerr(
                         'app {} is stopped because of timeout: {}s'.format(
