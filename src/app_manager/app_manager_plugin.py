@@ -40,8 +40,7 @@ class AppManagerPlugin(object):
     def __init__(self):
         pass
 
-    @classmethod
-    def app_manager_start_plugin(cls, app, ctx, plugin_args):
+    def app_manager_start_plugin(self, app, ctx, plugin_args):
         """Start plugin for app_manager
 
         Args:
@@ -52,8 +51,7 @@ class AppManagerPlugin(object):
 
         return ctx
 
-    @classmethod
-    def app_manager_stop_plugin(cls, app, ctx, plugin_args):
+    def app_manager_stop_plugin(self, app, ctx, plugin_args):
         """Stop plugin for app_manager
 
         Args:
