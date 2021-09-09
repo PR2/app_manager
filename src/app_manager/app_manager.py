@@ -167,6 +167,7 @@ class AppManager(object):
         self._interface_sync = None
         self._exit_code = None
         self._stopped = None
+        self._stopping = None
         self._current_plugins = None
         self._plugin_context = None
         self._plugin_insts = None
@@ -436,12 +437,14 @@ class AppManager(object):
     
     def _stop_current(self):
         try:
+            self._stopping = True
             self.__stop_current()
         finally:
             self._launch = None
             self._plugin_launch = None
             self._exit_code = None
             self._stopped = None
+            self._stopping = None
             self._current_plugins = None
             self._plugin_context = None
             self._plugin_insts = None
@@ -556,7 +559,8 @@ class AppManager(object):
                             self._exit_code = max(exit_codes)
                     if pm.done:
                         time.sleep(1.0)
-                        self.stop_app(appname)
+                        if not self._stopping:
+                            self.stop_app(appname)
                         break
                 if (timeout is not None and
                         self._start_time is not None and
