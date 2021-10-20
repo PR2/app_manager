@@ -282,6 +282,7 @@ class AppManager(object):
         # TODO: the app list has already loaded the App data.  We should use that instead for consistency
 
         appname = req.name
+        app_launch_args = req.launch_args
         rospy.loginfo("Loading app: %s"%(appname))
         try:
             app = load_AppDefinition_by_name(appname)
@@ -295,7 +296,7 @@ class AppManager(object):
         try:
             self._set_current_app(App(name=appname), app)
 
-            rospy.loginfo("Launching: %s"%(app.launch))
+            rospy.loginfo("Launching: {} with args {}".format(app.launch, app_launch_args))
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'launching %s'%(app.display_name)))
 
             plugin_launch_files = []
@@ -353,7 +354,7 @@ class AppManager(object):
 
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
             self._launch = roslaunch.parent.ROSLaunchParent(
-                rospy.get_param("/run_id"), [app.launch],
+                rospy.get_param("/run_id"), [app.launch] + app_launch_args,
                 is_core=False, process_listeners=())
             if len(plugin_launch_files) > 0:
                 self._plugin_launch = roslaunch.parent.ROSLaunchParent(
