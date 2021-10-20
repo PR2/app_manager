@@ -295,8 +295,17 @@ class AppManager(object):
         try:
             self._set_current_app(App(name=appname), app)
 
-            rospy.loginfo("Launching: %s"%(app.launch))
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'launching %s'%(app.display_name)))
+
+            if len(req.args) == 0:
+                launch_files = [app.launch]
+                rospy.loginfo("Launching: {}".format(app.launch))
+            else:
+                app_launch_args = []
+                for arg in req.args:
+                    app_launch_args.append("{}:={}".format(arg.key, arg.value))
+                launch_files = [(app.launch, app_launch_args)]
+                rospy.loginfo("Launching: {} {}".format(app.launch, app_launch_args))
 
             plugin_launch_files = []
             if app.plugins:
@@ -353,7 +362,7 @@ class AppManager(object):
 
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
             self._launch = roslaunch.parent.ROSLaunchParent(
-                rospy.get_param("/run_id"), [app.launch],
+                rospy.get_param("/run_id"), launch_files,
                 is_core=False, process_listeners=())
             if len(plugin_launch_files) > 0:
                 self._plugin_launch = roslaunch.parent.ROSLaunchParent(
