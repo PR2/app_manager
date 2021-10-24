@@ -1,7 +1,8 @@
 <launch>
+  <arg name="launch_prefix" default="xterm -e" />
   <!-- $(anon talker) creates an anonymous name for this node -->
   <node name="$(anon talker)" pkg="rospy_tutorials" type="talker.py"
-        launch-prefix="xterm -e" />
+        launch-prefix="$(arg launch_prefix)" />
   <node name="$(anon listener)" pkg="rospy_tutorials" type="listener.py"
-        launch-prefix="xterm -e"/>
+        launch-prefix="$(arg launch_prefix)"/>
 </launch>
