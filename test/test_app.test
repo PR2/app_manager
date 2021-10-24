@@ -1,0 +1,22 @@
+<launch>
+  <arg name="app_list" default="$(find app_manager)/test/applist1" />
+  <arg name="port" default="9090" />
+
+  <node pkg="app_manager" type="appmaster" name="appmaster"
+        args="-p 11312" />
+  <node pkg="app_manager" type="app_manager" name="app_manager"
+        args="--applist $(arg app_list)" output="screen">
+    <param name="interface_master" value="http://localhost:11312"/>
+  </node>
+
+  <node pkg="rosservice" type="rosservice" name="start_app"
+	args="call --wait /robot/start_app '{ name : app_manager/appA, args: [{key: launch_prefix, value: python}]}'" />
+
+  <test test-name="hztest_test" pkg="rostest" type="hztest" name="hztest" >
+    <param name="topic" value="/chatter" />
+    <param name="hz" value="10.0" />
+    <param name="hzerror" value="3" />
+    <param name="test_duration" value="5.0" />
+  </test>
+
+</launch>

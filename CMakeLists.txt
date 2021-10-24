@@ -52,6 +52,8 @@ install(DIRECTORY launch scripts test
   USE_SOURCE_PERMISSIONS)
 
 if(CATKIN_ENABLE_TESTING)
+  find_package(rostest)
   catkin_add_nosetests(test/test_app.py)
   catkin_add_nosetests(test/test_app_list.py)
+  add_rostest(test/test_app.test)
 endif()
