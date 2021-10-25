@@ -217,11 +217,11 @@ class RemoteManager(object):
         return rosgraph.names.ns_join(ns, topic)
 
     def unsubscribe_all(self):
-        for (t,u),m in self.subs.items():
+        for (t,u),m in list(self.subs.items()):
             m.unregisterSubscriber(t,u)
-        for t,u in self.pubs.keys():
+        for t,u in list(self.pubs.keys()):
             self.unadvertise(t,u)
-        for s in self.srvs.keys():
+        for s in list(self.srvs.keys()):
             self.unadvertise_service(s)
         
     def new_topics(self, topic, publishers):
