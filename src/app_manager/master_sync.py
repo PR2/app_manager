@@ -171,7 +171,7 @@ class RemoteManager(object):
     def advertise_list(self, topic, topic_type, uris):
         topic = self.resolve(topic)
 
-        unadv = set((t,u) for (t,u) in self.pubs.iterkeys() if t == topic) - set([(topic, u) for u in uris])
+        unadv = set((t,u) for (t,u) in self.pubs.keys() if t == topic) - set([(topic, u) for u in uris])
         for (t,u) in self.pubs.keys():
             if (t,u) in unadv:
                 self.unadvertise(t,u)
