@@ -471,7 +471,7 @@ class AppManager(object):
             if (self._exit_code is None
                     and len(self._launch.pm.dead_list) > 0):
                 self._exit_code = self._launch.pm.dead_list[0].exit_code
-            if self._exit_code > 0:
+            if not self._exit_code is None and self._exit_code > 0:
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
         if self._plugin_launch:
