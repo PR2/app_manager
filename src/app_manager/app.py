@@ -254,7 +254,7 @@ def _AppDefinition_load_plugin_order_entry(app_data, appfile="UNKNOWN"):
     try:
         plugin_order = app_data.get('plugin_order', '')
         if plugin_order == '':
-            return None
+            return []
         return plugin_order
     except ValueError as e:
         raise InvalidAppException("Malformed appfile [%s]: bad plugin_order entry: %s"%(appfile, e))
