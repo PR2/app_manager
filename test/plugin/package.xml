@@ -1,0 +1,14 @@
+<package>
+  <name>app_manager_test_plugin</name>
+  <version>0.0.0</version>
+  <description>test_plugin of app_manager</description>
+  <maintainer email="ros-orphaned-packages@googlegroups.com">ROS Orphaned Package Maintainers</maintainer>
+  <license>BSD</license>
+
+  <run_depend>app_manager</run_depend>
+
+  <export>
+    <app_manager plugin="${prefix}/plugin.yaml" />
+    <app_manager app_dir="${prefix}" />
+  </export>
+</package>
