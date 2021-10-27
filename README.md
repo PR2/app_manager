@@ -139,19 +139,19 @@ plugins:
   - name: mail_notifier_plugin  # name to identify this plugin
     type: app_notifier/mail_notifier_plugin  # plugin type
     launch_args:  # arguments for plugin launch file
-      - foo: hello
+      foo: hello
     launch_arg_yaml: /etc/mail_notifier_launch_arg.yaml  # argument yaml file for plugin launch file
     # in this case, these arguments will be passed.
     # {"hoge": 100, "fuga": 30, "bar": 10} will be passed to start plugin
     # {"hoge": 50, "fuga": 30} will be passed to stop plugin
     plugin_args:  # arguments for plugin function
-      - hoge: 10
-      - fuga: 30
+      hoge: 10
+      fuga: 30
     start_plugin_args:  # arguments for start plugin function
-      - hoge: 100  # arguments for start plugin function arguments (it overwrites plugin_args hoge: 10 -> 100)
-      - bar: 10
+      hoge: 100  # arguments for start plugin function arguments (it overwrites plugin_args hoge: 10 -> 100)
+      bar: 10
     stop_plugin_args:  # arguments for stop plugin function
-      - hoge: 50  # arguments for stop plugin function arguments (it overwrites plugin_args hoge: 10 -> 50)
+      hoge: 50  # arguments for stop plugin function arguments (it overwrites plugin_args hoge: 10 -> 50)
     plugin_arg_yaml: /etc/mail_notifier_plugin_arg.yaml  # argument yaml file for plugin function arguments
   - name: rosbag_recorder_plugin  # another plugin
     type app_recorder/rosbag_recorder_plugin

@@ -237,6 +237,10 @@ def _AppDefinition_load_plugins_entry(app_data, appfile="UNKNOWN"):
         plugins = app_data.get('plugins', '')
         if plugins == '':
             return None
+        for plugin in plugins:
+            for key in ['launch_args', 'plugin_args', 'start_plugin_args', 'stop_plugin_args']:
+                if key in plugin and not type(plugin[key]) == dict:
+                    raise InvalidAppException("Malformed appfile [%s]: plugin data(%s) must be a map"%(appfile, key))
         return plugins
     except ValueError as e:
         raise InvalidAppException("Malformed appfile [%s]: bad plugins entry: %s"%(appfile, e))
