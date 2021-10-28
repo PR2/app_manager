@@ -441,10 +441,11 @@ class AppManager(object):
             try:
                 # attempt to kill any launched resources
                 self._stop_current()
-            except:
-                pass
+            finally:
+                self._set_current_app(None, None)
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'app start failed'))
-            rospy.logerr("app start failed")
+            rospy.logerr(
+                "app start failed [{}, line {}: {}]".format(fname, exc_tb.tb_lineno, str(e)))
             return StartAppResponse(started=False, message="internal error [%s, line %d: %s]"%(fname, exc_tb.tb_lineno, str(e)), error_code=StatusCodes.INTERNAL_ERROR)
     
     def _stop_current(self):
