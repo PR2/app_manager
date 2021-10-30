@@ -1,5 +1,6 @@
 # Name of the app to launch
 string name 
+KeyValue[] args
 ---
 # true if app started, false otherwise
 bool started

@@ -34,6 +34,7 @@
 
 # author: leibs
 import sys
+import os
 
 if sys.version_info[0] == 3:
     import _thread as thread  # python3 renamed from thread to _thread
@@ -167,6 +168,7 @@ class AppManager(object):
         self._interface_sync = None
         self._exit_code = None
         self._stopped = None
+        self._stopping = None
         self._current_plugins = None
         self._plugin_context = None
         self._plugin_insts = None
@@ -294,8 +296,17 @@ class AppManager(object):
         try:
             self._set_current_app(App(name=appname), app)
 
-            rospy.loginfo("Launching: %s"%(app.launch))
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'launching %s'%(app.display_name)))
+
+            if len(req.args) == 0:
+                launch_files = [app.launch]
+                rospy.loginfo("Launching: {}".format(app.launch))
+            else:
+                app_launch_args = []
+                for arg in req.args:
+                    app_launch_args.append("{}:={}".format(arg.key, arg.value))
+                launch_files = [(app.launch, app_launch_args)]
+                rospy.loginfo("Launching: {} {}".format(app.launch, app_launch_args))
 
             plugin_launch_files = []
             if app.plugins:
@@ -352,7 +363,7 @@ class AppManager(object):
 
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
             self._launch = roslaunch.parent.ROSLaunchParent(
-                rospy.get_param("/run_id"), [app.launch],
+                rospy.get_param("/run_id"), launch_files,
                 is_core=False, process_listeners=())
             if len(plugin_launch_files) > 0:
                 self._plugin_launch = roslaunch.parent.ROSLaunchParent(
@@ -425,6 +436,8 @@ class AppManager(object):
             return StartAppResponse(started=True, message="app [%s] started"%(appname), namespace=self._app_interface)
         
         except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             try:
                 # attempt to kill any launched resources
                 self._stop_current()
@@ -432,16 +445,18 @@ class AppManager(object):
                 pass
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'app start failed'))
             rospy.logerr("app start failed")
-            return StartAppResponse(started=False, message="internal error [%s]"%(str(e)), error_code=StatusCodes.INTERNAL_ERROR)
+            return StartAppResponse(started=False, message="internal error [%s, line %d: %s]"%(fname, exc_tb.tb_lineno, str(e)), error_code=StatusCodes.INTERNAL_ERROR)
     
     def _stop_current(self):
         try:
+            self._stopping = True
             self.__stop_current()
         finally:
             self._launch = None
             self._plugin_launch = None
             self._exit_code = None
             self._stopped = None
+            self._stopping = None
             self._current_plugins = None
             self._plugin_context = None
             self._plugin_insts = None
@@ -459,7 +474,7 @@ class AppManager(object):
             if (self._exit_code is None
                     and len(self._launch.pm.dead_list) > 0):
                 self._exit_code = self._launch.pm.dead_list[0].exit_code
-            if self._exit_code > 0:
+            if not self._exit_code is None and self._exit_code > 0:
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
         if self._plugin_launch:
@@ -556,7 +571,8 @@ class AppManager(object):
                             self._exit_code = max(exit_codes)
                     if pm.done:
                         time.sleep(1.0)
-                        self.stop_app(appname)
+                        if not self._stopping:
+                            self.stop_app(appname)
                         break
                 if (timeout is not None and
                         self._start_time is not None and
@@ -601,7 +617,9 @@ class AppManager(object):
                     self._set_current_app(None, None)
 
         except Exception as e:
-            rospy.logerr("handle stop app: internal error %s"%(e))
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            rospy.logerr("handle stop app: internal error [%s, line %d: %s]"%(fname, exc_tb.tb_lineno, str(e)))
             resp.error_code = StatusCodes.INTERNAL_ERROR
             resp.message = "internal error: %s"%(str(e))
             

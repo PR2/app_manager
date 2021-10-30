@@ -1,0 +1,4 @@
+# this file provide information of launch program and start/stop plugin code
+- name: test_plugin/test_plugin
+  launch: app_manager/sample_node.xml
+  module: test_plugin.TestPlugin
