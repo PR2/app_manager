@@ -34,6 +34,7 @@
 
 # author: leibs
 import sys
+import os
 
 if sys.version_info[0] == 3:
     import _thread as thread  # python3 renamed from thread to _thread
@@ -435,6 +436,8 @@ class AppManager(object):
             return StartAppResponse(started=True, message="app [%s] started"%(appname), namespace=self._app_interface)
         
         except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             try:
                 # attempt to kill any launched resources
                 self._stop_current()
@@ -442,7 +445,7 @@ class AppManager(object):
                 pass
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'app start failed'))
             rospy.logerr("app start failed")
-            return StartAppResponse(started=False, message="internal error [%s]"%(str(e)), error_code=StatusCodes.INTERNAL_ERROR)
+            return StartAppResponse(started=False, message="internal error [%s, line %d: %s]"%(fname, exc_tb.tb_lineno, str(e)), error_code=StatusCodes.INTERNAL_ERROR)
     
     def _stop_current(self):
         try:
@@ -471,7 +474,7 @@ class AppManager(object):
             if (self._exit_code is None
                     and len(self._launch.pm.dead_list) > 0):
                 self._exit_code = self._launch.pm.dead_list[0].exit_code
-            if self._exit_code > 0:
+            if not self._exit_code is None and self._exit_code > 0:
                 rospy.logerr(
                     "App stopped with exit code: {}".format(self._exit_code))
         if self._plugin_launch:
@@ -614,7 +617,9 @@ class AppManager(object):
                     self._set_current_app(None, None)
 
         except Exception as e:
-            rospy.logerr("handle stop app: internal error %s"%(e))
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            rospy.logerr("handle stop app: internal error [%s, line %d: %s]"%(fname, exc_tb.tb_lineno, str(e)))
             resp.error_code = StatusCodes.INTERNAL_ERROR
             resp.message = "internal error: %s"%(str(e))
             

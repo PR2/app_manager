@@ -171,7 +171,7 @@ class RemoteManager(object):
     def advertise_list(self, topic, topic_type, uris):
         topic = self.resolve(topic)
 
-        unadv = set((t,u) for (t,u) in self.pubs.iterkeys() if t == topic) - set([(topic, u) for u in uris])
+        unadv = set((t,u) for (t,u) in self.pubs.keys() if t == topic) - set([(topic, u) for u in uris])
         for (t,u) in self.pubs.keys():
             if (t,u) in unadv:
                 self.unadvertise(t,u)
@@ -217,11 +217,11 @@ class RemoteManager(object):
         return rosgraph.names.ns_join(ns, topic)
 
     def unsubscribe_all(self):
-        for (t,u),m in self.subs.iteritems():
+        for (t,u),m in list(self.subs.items()):
             m.unregisterSubscriber(t,u)
-        for t,u in self.pubs.keys():
+        for t,u in list(self.pubs.keys()):
             self.unadvertise(t,u)
-        for s in self.srvs.keys():
+        for s in list(self.srvs.keys()):
             self.unadvertise_service(s)
         
     def new_topics(self, topic, publishers):
