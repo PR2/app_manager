@@ -45,11 +45,25 @@ catkin_package(
 )
 
 
-install(PROGRAMS bin/rosget bin/appmaster
+catkin_install_python(PROGRAMS bin/rosget bin/appmaster
  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-install(DIRECTORY launch scripts test
+install(DIRECTORY launch test
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-  USE_SOURCE_PERMISSIONS)
+  USE_SOURCE_PERMISSIONS
+  PATTERN *.py EXCLUDE)
+file(GLOB_RECURSE TEST_FILES
+  RELATIVE "${PROJECT_SOURCE_DIR}"
+  "test/*.py")
+foreach(TEST_FILE ${TEST_FILES})
+  get_filename_component(DIR ${TEST_FILE} DIRECTORY)
+  catkin_install_python(PROGRAMS ${TEST_FILE}
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${DIR})
+endforeach()
+file(GLOB SCRIPTS_FILES
+  RELATIVE "${PROJECT_SOURCE_DIR}"
+  "${PROJECT_SOURCE_DIR}/scripts/*")
+catkin_install_python(PROGRAMS ${SCRIPTS_FILES}
+ DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/scripts)
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest)
