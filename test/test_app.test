@@ -10,7 +10,7 @@
   </node>
 
   <node pkg="rosservice" type="rosservice" name="start_app"
-	args="call --wait /robot/start_app '{ name : app_manager/appA, args: [{key: launch_prefix, value: python}]}'" />
+	args="call --wait /robot/start_app '{ name : app_manager/appA, args: [{key: launch_prefix, value: python$(env ROS_PYTHON_VERSION)}]}'" />
 
   <test test-name="hztest_test" pkg="rostest" type="hztest" name="hztest" >
     <param name="topic" value="/chatter" />
