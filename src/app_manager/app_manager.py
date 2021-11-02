@@ -441,6 +441,8 @@ class AppManager(object):
             try:
                 # attempt to kill any launched resources
                 self._stop_current()
+            except:
+                pass
             finally:
                 self._set_current_app(None, None)
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'app start failed'))
