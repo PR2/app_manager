@@ -38,6 +38,12 @@ install:
   - (cd /tmp/ros_buildfarm; git checkout f7a12d8)
   - (cd /tmp; wget https://github.com/ros-infrastructure/ros_buildfarm/pull/890.diff)
   - (cd /tmp/ros_buildfarm; patch -p1 < /tmp/890.diff)
+  - (cd /tmp/ros_buildfarm; sed -i "/# After all dependencies are installed, update ccache symlinks./a @[if testing]@\nRUN rosdep init\n@[end if]@\n" ros_buildfarm/templates/devel/devel_task.Dockerfile.em)
+  - (cd /tmp/ros_buildfarm; sed -i "/USER buildfarm/a @[if testing]@\nRUN rosdep update\n@[end if]@\n" ros_buildfarm/templates/devel/devel_task.Dockerfile.em)
+  # revert https://github.com/ros/ros_comm/pull/1879, whcih create /tmp/rostest_bin_hook/python so did not fail with rostest
+  - if [ "${ROS_DISTRO_NAME}" == "noetic" ]; then (cd /tmp/ros_buildfarm; sed -i "/^# After all dependencies are installed, update ccache symlinks./a @[if testing]@\nRUN apt-get install -qq -y wget patch\nRUN wget https://patch-diff.githubusercontent.com/raw/ros/ros_comm/pull/1879.diff -O /tmp/1879.diff\nRUN (cd /opt/ros/noetic/bin/; patch -R -p4 < /tmp/1879.diff )\n@[end if]@" ros_buildfarm/templates/devel/devel_task.Dockerfile.em); fi
+  - (mkdir -p $JOB_PATH; cp -r /tmp/ros_buildfarm $JOB_PATH) # copy to prevent from git clone ros_buildfarm
+  #
   - pip install /tmp/ros_buildfarm
   # checkout catkin for catkin_test_results script
   - git clone https://github.com/ros/catkin /tmp/catkin
