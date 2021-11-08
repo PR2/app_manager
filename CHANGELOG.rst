@@ -2,8 +2,8 @@
 Changelog for package app_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.3.0 (2021-11-08)
+------------------
 * update setuptools to follow noetic migration guide (`#36 <https://github.com/pr2/app_manager/issues/36>`_)
 * app_manager cannot start app after failing app #42  (`#42 <https://github.com/pr2/app_manager/issues/42>`_)
 
