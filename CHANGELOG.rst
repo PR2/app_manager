@@ -2,6 +2,63 @@
 Changelog for package app_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update setuptools to follow noetic migration guide (`#36 <https://github.com/pr2/app_manager/issues/36>`_)
+* app_manager cannot start app after failing app #42  (`#42 <https://github.com/pr2/app_manager/issues/42>`_)
+
+  * set current_app None when start failed
+  * add test_start_fail.test
+  * need catch error on _stop_current()
+  * add test_start_fail.test
+    test to check `#42 <https://github.com/pr2/app_manager/issues/42>`_, app_manager cannot start app after failing app
+
+* add test to check if we forget catkin_install_python (`#44 <https://github.com/pr2/app_manager/issues/44>`_)
+
+  * call app_manager/appA with python2/python3 with ROS_PYTHON_VERSION
+  * use catkin_install_python for noetic
+  * add test to check if we forget to use catkin_install_python
+
+* add_rostest(test/test_plugin.test) (`#45 <https://github.com/pr2/app_manager/issues/45>`_)
+
+  * run rosdep install in devel_create_tasks.Dockerfile
+  * update to format3 and install python-rosdep
+  * use port 11313 for app_manager in test_plugin.test
+  * add_rostest(test/test_plugin.test)
+
+* add more test code (`#41 <https://github.com/pr2/app_manager/issues/41>`_
+
+  * show more error messages
+  * default return value of plugin_order must be list
+  * plugins: 'launch_args', 'plugin_args', 'start_plugin_args', 'stop_plugin_args' must be dict, not list
+  * test_plugin: add test to check plugins
+  * use list(self.subs.items()) instead of self.subs.items()
+  * Error processing request: '>' not supported between instances of 'NoneType' and 'int'
+  * python3: AttributeError: 'dict' object has no attribute 'iteritems'
+  * add test for list_apps/stop_app, add test_stop_app.py
+  * python3: AttributeError: 'dict' object has no attribute 'iterkeys'
+  * add 2to3 in CHECK_PYTHON3_COMPILE
+  * add test/test_app.test
+  * test/resources/example-moin.launch: use arg launch_prefox to select if we use xterm or not
+
+* add arguments in StartAppRequest (`#27 <https://github.com/pr2/app_manager/issues/27>`_)
+
+  * use req.args for launch args in app_manager.py
+  * add args in StartApp srv
+
+* do not run stop_app when _stopping is true (`#38 <https://github.com/pr2/app_manager/issues/38>`_)
+* fix travis build (`#39 <https://github.com/pr2/app_manager/issues/39>`_)
+
+  * fix typo in .travis.yml
+  * run with full path
+  * add CHECK_PYTHON2_COMPILE and CHECK_PYTHON3_COMPILE tests
+
+* use plugins as instance / use normal method in app_manager_plugin (`#37 <https://github.com/pr2/app_manager/issues/37>`_)
+* set stopped true in app timeout (`#31 <https://github.com/pr2/app_manager/issues/31>`_)
+* use system python to check python3 compileall (`#34 <https://github.com/pr2/app_manager/issues/34>`_)
+
+* Contributors: Kei Okada, Shingo Kitagawa
+
 1.2.0 (2021-03-03)
 ------------------
 * Merge pull request `#29 <https://github.com/pr2/app_manager/issues/29>`_ from knorth55/add-stopped
