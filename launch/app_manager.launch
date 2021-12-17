@@ -4,6 +4,10 @@
   <arg name="master_address" default="localhost" doc="address for app_manager master"/>
   <arg name="master_port" default="11313" doc="port for app_manager master"/>
 
+  <!-- node name -->
+  <arg name="master_node_name" default="appmaster" />
+  <arg name="manager_node_name" default="app_manager" />
+
   <!-- app list -->
   <arg name="use_applist" default="false" doc="load apps from applist argument"/>
   <arg name="applist" default="" doc="app dirs (space separated)"/>
@@ -15,9 +19,9 @@
   <arg name="app_manager_args" default="--applist $(arg applist)" if="$(arg use_applist)"/>
   <arg name="app_manager_args" default=""                     unless="$(arg use_applist)"/>
 
-  <node pkg="app_manager" type="appmaster" name="appmaster"
+  <node pkg="app_manager" type="appmaster" name="$(arg master_node_name)"
         args="-p $(arg master_port)" if="$(arg master)" respawn="$(arg respawn)"/>
-  <node pkg="app_manager" type="app_manager" name="app_manager"
+  <node pkg="app_manager" type="app_manager" name="$(arg manager_node_name)"
         args="$(arg app_manager_args)"
         output="screen" respawn="$(arg respawn)">
     <param name="interface_master" value="http://$(arg master_address):$(arg master_port)"/>
