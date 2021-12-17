@@ -6,6 +6,9 @@
   <arg name="sigint_timeout" default="15.0" doc="Time between sending sigint and sending sigterm to ROSLaunchParent"/>
   <arg name="sigterm_timeout" default="2.0" doc="Time between sending sigterm and sending sigkill to ROSLaunchParent"/>
 
+  <!-- node name -->
+  <arg name="master_node_name" default="appmaster" />
+  <arg name="manager_node_name" default="app_manager" />
   <!-- app list -->
   <arg name="use_applist" default="false" doc="load apps from applist argument"/>
   <arg name="applist" default="" doc="app dirs (space separated)"/>
@@ -32,16 +35,16 @@
   <arg name="applist_args" default=""                     unless="$(arg use_applist)"/>
   <arg name="robot_name_args" default="--robot-name $(arg robot_name)"
        if="$(arg use_robot_name)"/>
-  <arg name="robot_name_args" default="" 
+  <arg name="robot_name_args" default=""
        unless="$(arg use_robot_name)"/>
   <arg name="robot_type_args" default="--robot-type $(arg robot_type)"
        if="$(arg use_robot_type)"/>
-  <arg name="robot_type_args" default="" 
+  <arg name="robot_type_args" default=""
        unless="$(arg use_robot_type)"/>
 
-  <node pkg="app_manager" type="appmaster" name="appmaster"
+  <node pkg="app_manager" type="appmaster" name="$(arg master_node_name)"
         args="-p $(arg master_port)" if="$(arg master)" respawn="$(arg respawn)"/>
-  <node pkg="app_manager" type="app_manager" name="app_manager"
+  <node pkg="app_manager" type="app_manager" name="$(arg manager_node_name)"
         args="$(arg applist_args) $(arg robot_name_args) $(arg robot_type_args)"
         output="screen" respawn="$(arg respawn)">
     <rosparam subst_value="true">
