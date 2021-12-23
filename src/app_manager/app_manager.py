@@ -613,8 +613,8 @@ class AppManager(object):
                         self._stop_current()
                         resp.stopped = True
                         resp.message = "%s stopped"%(appname)
-                        resp.timeout = self._timeout
                         if self._timeout:
+                            resp.timeout = self._timeout
                             rosinfo_message += "by timeout"
                             app_status_message += "by timeout"
                             resp.message += " by timeout"
