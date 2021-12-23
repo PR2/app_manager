@@ -3,6 +3,8 @@ string name
 ---
 # true if app stopped, false otherwise
 bool stopped
+# true if app stopped by timeout, false otherwise
+bool timeout
 # if app did not stop, error code for classifying stop failure.  See
 # StatusCodes.msg for common codes.
 int32 error_code
