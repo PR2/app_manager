@@ -1,0 +1,4 @@
+<launch>
+  <node name="sample0" pkg="roseus" type="roseus" output="screen"
+        args="$(find app_scheduler)/apps/sample0/sample0.l" />
+</launch>
