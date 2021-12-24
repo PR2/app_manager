@@ -11,6 +11,12 @@
   <!-- respawn -->
   <arg name="respawn" default="false" doc="respawn app_manager"/>
 
+  <!-- app_manager options -->
+  <arg name="enable_app_replacement" default="true"
+       doc="Enable app replacement by running another app, or not" />
+  <arg name="skip_topic_remapping" default="false"
+       doc="Skip name remapping of topic written in interface to app_manager namespace , or not" />
+
   <!-- internal use -->
   <arg name="app_manager_args" default="--applist $(arg applist)" if="$(arg use_applist)"/>
   <arg name="app_manager_args" default=""                     unless="$(arg use_applist)"/>
@@ -20,6 +26,10 @@
   <node pkg="app_manager" type="app_manager" name="app_manager"
         args="$(arg app_manager_args)"
         output="screen" respawn="$(arg respawn)">
-    <param name="interface_master" value="http://$(arg master_address):$(arg master_port)"/>
+    <rosparam subst_value="true">
+      interface_master: http://$(arg master_address):$(arg master_port)
+      enable_app_replacement: $(arg enable_app_replacement)
+      skip_topic_remapping: $(arg skip_topic_remapping)
+    </rosparam>
   </node>
 </launch>
