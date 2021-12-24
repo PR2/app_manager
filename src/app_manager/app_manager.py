@@ -121,6 +121,7 @@ class AppManager(object):
     def __init__(
             self, robot_name, interface_master, app_list,
             exchange, plugins=None, enable_app_replacement=True,
+            skip_topic_remapping=False,
     ):
         self._robot_name = robot_name
         self._interface_master = interface_master
@@ -129,6 +130,7 @@ class AppManager(object):
         self._exchange = exchange
         self._plugins = plugins
         self._enable_app_replacement = enable_app_replacement
+        self._skip_topic_remapping = skip_topic_remapping
             
         rospy.loginfo("Starting app manager for %s"%self._robot_name)
 
@@ -375,11 +377,12 @@ class AppManager(object):
                 self._plugin_launch._load_config()
 
             #TODO: convert to method
-            for N in self._launch.config.nodes:
-                for t in app.interface.published_topics.keys():
-                    N.remap_args.append((t, self._app_interface + '/' + t))
-                for t in app.interface.subscribed_topics.keys():
-                    N.remap_args.append((t, self._app_interface + '/' + t))
+            if not self._skip_topic_remapping:
+                for N in self._launch.config.nodes:
+                    for t in app.interface.published_topics.keys():
+                        N.remap_args.append((t, self._app_interface + '/' + t))
+                    for t in app.interface.subscribed_topics.keys():
+                        N.remap_args.append((t, self._app_interface + '/' + t))
 
             # run plugin modules first
             if self._current_plugins:
@@ -426,8 +429,11 @@ class AppManager(object):
             if app.timeout is not None:
                 self._start_time = rospy.Time.now()
 
-            fp = [self._app_interface + '/' + x for x in app.interface.subscribed_topics.keys()]
-            lp = [self._app_interface + '/' + x for x in app.interface.published_topics.keys()]
+            fp = [x for x in app.interface.subscribed_topics.keys()]
+            lp = [x for x in app.interface.published_topics.keys()]
+            if not self._skip_topic_remapping:
+                fp = [self._app_interface + '/' + x for x in fp]
+                lp = [self._app_interface + '/' + x for x in lp]
 
             self._interface_sync = MasterSync(self._interface_master, foreign_pub_names=fp, local_pub_names=lp)
 
