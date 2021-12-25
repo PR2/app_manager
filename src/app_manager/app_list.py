@@ -44,6 +44,8 @@ import rospy
 import sys
 import yaml
 
+import rospkg
+
 from .app import load_AppDefinition_by_name
 from .msg import App, ClientApp, KeyValue, Icon
 from .exceptions import AppException, InvalidAppException, NotFoundException
@@ -100,6 +102,7 @@ class InstalledFile(object):
 
     def _load(self):
         available_apps = []
+        rospack = rospkg.RosPack()
         with open(self.filename) as f:
             installed_data = yaml.load(f)
         for reqd in ['apps']:
@@ -110,7 +113,8 @@ class InstalledFile(object):
                 if not areqd in app:
                     raise InvalidAppException("installed file [%s] app definition is missing required key [%s]"%(self.filename, areqd))
             try:
-                available_apps.append(load_AppDefinition_by_name(app['app']))
+                available_apps.append(
+                    load_AppDefinition_by_name(app['app'], rospack=rospack))
             except NotFoundException as e:
                 rospy.logerr(e)
                 continue
