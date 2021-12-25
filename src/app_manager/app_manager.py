@@ -121,7 +121,7 @@ class AppManager(object):
     def __init__(
             self, robot_name, interface_master, app_list,
             exchange, plugins=None, enable_app_replacement=True,
-            skip_topic_remapping=False,
+            enable_topic_remapping=True,
     ):
         self._robot_name = robot_name
         self._interface_master = interface_master
@@ -130,7 +130,7 @@ class AppManager(object):
         self._exchange = exchange
         self._plugins = plugins
         self._enable_app_replacement = enable_app_replacement
-        self._skip_topic_remapping = skip_topic_remapping
+        self._enable_topic_remapping = enable_topic_remapping
             
         rospy.loginfo("Starting app manager for %s"%self._robot_name)
 
@@ -377,7 +377,7 @@ class AppManager(object):
                 self._plugin_launch._load_config()
 
             #TODO: convert to method
-            if not self._skip_topic_remapping:
+            if self._enable_topic_remapping:
                 for N in self._launch.config.nodes:
                     for t in app.interface.published_topics.keys():
                         N.remap_args.append((t, self._app_interface + '/' + t))
@@ -431,7 +431,7 @@ class AppManager(object):
 
             fp = [x for x in app.interface.subscribed_topics.keys()]
             lp = [x for x in app.interface.published_topics.keys()]
-            if not self._skip_topic_remapping:
+            if self._enable_topic_remapping:
                 fp = [self._app_interface + '/' + x for x in fp]
                 lp = [self._app_interface + '/' + x for x in lp]
 

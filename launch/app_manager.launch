@@ -14,8 +14,8 @@
   <!-- app_manager options -->
   <arg name="enable_app_replacement" default="true"
        doc="Enable app replacement by running another app, or not" />
-  <arg name="skip_topic_remapping" default="false"
-       doc="Skip name remapping of topic written in interface to app_manager namespace , or not" />
+  <arg name="enable_topic_remapping" default="true"
+       doc="Enable name remapping of topic written in interface to app_manager namespace , or not" />
 
   <!-- internal use -->
   <arg name="app_manager_args" default="--applist $(arg applist)" if="$(arg use_applist)"/>
@@ -29,7 +29,7 @@
     <rosparam subst_value="true">
       interface_master: http://$(arg master_address):$(arg master_port)
       enable_app_replacement: $(arg enable_app_replacement)
-      skip_topic_remapping: $(arg skip_topic_remapping)
+      enable_topic_remapping: $(arg enable_topic_remapping)
     </rosparam>
   </node>
 </launch>
