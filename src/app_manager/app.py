@@ -39,6 +39,7 @@ import errno
 import yaml
 
 import roslib.names
+import rospkg
 from rospkg import ResourceNotFound
 from .exceptions import AppException, InvalidAppException, NotFoundException, InternalAppException
 
@@ -126,7 +127,17 @@ def find_resource(resource):
     p, a = roslib.names.package_resource_name(resource)
     if not p:
         raise ValueError("Resource is missing package name: %s"%(resource))
-    matches = roslib.packages.find_resource(p, a)
+
+    # roslib.packages.find_resource is too slow
+    # matches = roslib.packages.find_resource(p, a)
+    rospack = rospkg.RosPack()
+    pkg_path = rospack.get_path(p)
+    matches = []
+    for dirpath, dirnames, filenames in os.walk(pkg_path):
+        for filename in filenames:
+            if filename == a:
+                matches.append(os.path.join(dirpath, filename))
+
     # TODO: convert ValueError to better type for better error messages
     if len(matches) == 1:
         return matches[0]
