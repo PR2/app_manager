@@ -62,6 +62,9 @@ from .master_sync import MasterSync
 from .msg import App, AppList, StatusCodes, AppStatus, AppInstallationState, ExchangeApp
 from .srv import StartApp, StopApp, ListApps, ListAppsResponse, StartAppResponse, StopAppResponse, InstallApp, UninstallApp, GetInstallationState, UninstallAppResponse, InstallAppResponse, GetInstallationStateResponse, GetAppDetails, GetAppDetailsResponse
 
+# for profiling
+# import cProfile, pstats
+# from io import BytesIO as StringIO
 
 def _load_config_default(
         roslaunch_files, port, roslaunch_strs=None, loader=None, verbose=False,
@@ -179,10 +182,24 @@ class AppManager(object):
         if (self._exchange):
             self._exchange.update_local()
 
+        # for time profiling
+        # time profiling is commented out because it will slow down.
+        # comment in when you debug it
+        # start_time = time.time()
+        # pr = cProfile.Profile()
+        # pr.enable()
         self._app_list.update()
         self.publish_exchange_list_apps()
         self.publish_list_apps()
-        
+        # pr.disable()
+        # s = StringIO()
+        # sortby = 'cumulative'
+        # ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        # ps.print_stats()
+        # print(s.getvalue())
+        # end_time = time.time()
+        # rospy.logerr('total time: {}'.format(end_time - start_time))
+
     def shutdown(self):
         if self._api_sync:
             self._api_sync.stop()
