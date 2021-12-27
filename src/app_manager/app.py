@@ -153,12 +153,12 @@ def load_Interface_from_file(filename):
     """
     with open(filename,'r') as f:
         y = yaml.load(f.read())
-        y = y or {} #coerce to dict
-        try:
-            subscribed_topics = y.get('subscribed_topics', {})
-            published_topics = y.get('published_topics', {})
-        except KeyError:
-            raise InvalidAppException("Malformed interface, missing keys")
+    y = y or {} #coerce to dict
+    try:
+        subscribed_topics = y.get('subscribed_topics', {})
+        published_topics = y.get('published_topics', {})
+    except KeyError:
+        raise InvalidAppException("Malformed interface, missing keys")
     return Interface(published_topics=published_topics, subscribed_topics=subscribed_topics)
 
 def _AppDefinition_load_icon_entry(app_data, appfile="UNKNOWN"):
@@ -293,22 +293,22 @@ def load_AppDefinition_from_file(appfile, appname):
     """
     with open(appfile,'r') as f:
         app_data = yaml.load(f.read())
-        for reqd in ['launch', 'interface', 'platform']:
-            if not reqd in app_data:
-                raise InvalidAppException("Malformed appfile [%s], missing required key [%s]"%(appfile, reqd))
+    for reqd in ['launch', 'interface', 'platform']:
+        if not reqd in app_data:
+            raise InvalidAppException("Malformed appfile [%s], missing required key [%s]"%(appfile, reqd))
 
-        display_name = app_data.get('display', appname)
-        description = app_data.get('description', '')        
-        platform = app_data['platform']
+    display_name = app_data.get('display', appname)
+    description = app_data.get('description', '')
+    platform = app_data['platform']
 
 
-        launch = _AppDefinition_load_launch_entry(app_data, appfile)
-        interface = _AppDefinition_load_interface_entry(app_data, appfile)
-        clients = _AppDefinition_load_clients_entry(app_data, appfile)
-        icon = _AppDefinition_load_icon_entry(app_data, appfile)
-        plugins = _AppDefinition_load_plugins_entry(app_data, appfile)
-        plugin_order = _AppDefinition_load_plugin_order_entry(app_data, appfile)
-        timeout = _AppDefinition_load_timeout_entry(app_data, appfile)
+    launch = _AppDefinition_load_launch_entry(app_data, appfile)
+    interface = _AppDefinition_load_interface_entry(app_data, appfile)
+    clients = _AppDefinition_load_clients_entry(app_data, appfile)
+    icon = _AppDefinition_load_icon_entry(app_data, appfile)
+    plugins = _AppDefinition_load_plugins_entry(app_data, appfile)
+    plugin_order = _AppDefinition_load_plugin_order_entry(app_data, appfile)
+    timeout = _AppDefinition_load_timeout_entry(app_data, appfile)
 
     return AppDefinition(appname, display_name, description, platform,
                          launch, interface, clients, icon,

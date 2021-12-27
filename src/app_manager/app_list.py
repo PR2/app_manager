@@ -102,20 +102,20 @@ class InstalledFile(object):
         available_apps = []
         with open(self.filename) as f:
             installed_data = yaml.load(f)
-            for reqd in ['apps']:
-                if not reqd in installed_data:
-                    raise InvalidAppException("installed file [%s] is missing required key [%s]"%(self.filename, reqd))
-            for app in installed_data['apps']:
-                for areqd in ['app']:
-                    if not areqd in app:
-                        raise InvalidAppException("installed file [%s] app definition is missing required key [%s]"%(self.filename, areqd))
-                try:
-                    available_apps.append(load_AppDefinition_by_name(app['app']))
-                except NotFoundException as e:
-                    rospy.logerr(e)
-                    continue
-                except Exception as e:
-                    raise e
+        for reqd in ['apps']:
+            if not reqd in installed_data:
+                raise InvalidAppException("installed file [%s] is missing required key [%s]"%(self.filename, reqd))
+        for app in installed_data['apps']:
+            for areqd in ['app']:
+                if not areqd in app:
+                    raise InvalidAppException("installed file [%s] app definition is missing required key [%s]"%(self.filename, areqd))
+            try:
+                available_apps.append(load_AppDefinition_by_name(app['app']))
+            except NotFoundException as e:
+                rospy.logerr(e)
+                continue
+            except Exception as e:
+                raise e
 
         self.available_apps = available_apps
 
