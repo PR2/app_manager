@@ -128,16 +128,9 @@ def find_resource(resource, rospack=None):
     if not p:
         raise ValueError("Resource is missing package name: %s"%(resource))
 
-    # roslib.packages.find_resource is too slow
-    # matches = roslib.packages.find_resource(p, a)
     if rospack is None:
         rospack = rospkg.RosPack()
-    pkg_path = rospack.get_path(p)
-    matches = []
-    for dirpath, dirnames, filenames in os.walk(pkg_path):
-        for filename in filenames:
-            if filename == a:
-                matches.append(os.path.join(dirpath, filename))
+    matches = roslib.packages.find_resource(p, a, rospack=rospack)
 
     # TODO: convert ValueError to better type for better error messages
     if len(matches) == 1:
