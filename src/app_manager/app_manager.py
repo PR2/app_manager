@@ -461,6 +461,7 @@ class AppManager(object):
             self._exit_code = None
             self._stopped = None
             self._stopping = None
+            self._timeout = None
             self._current_plugins = None
             self._plugin_context = None
             self._plugin_insts = None
