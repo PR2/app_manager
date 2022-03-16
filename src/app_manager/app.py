@@ -76,18 +76,19 @@ class Client(object):
                
 class AppDefinition(object):
     __slots__ = ['name', 'display_name', 'description', 'platform',
-                 'launch', 'interface', 'clients', 'icon', 'plugins', 'plugin_order',
+                 'launch', 'run', 'interface', 'clients', 'icon', 'plugins', 'plugin_order',
                  'timeout']
     def __init__(self, name, display_name, description, platform,
-                 launch, interface, clients, icon=None, plugins=None, plugin_order=None,
+                 interface, clients, launch=None, run=None, icon=None, plugins=None, plugin_order=None,
                  timeout=None):
         self.name = name
         self.display_name = display_name
         self.description = description
         self.platform=platform
-        self.launch = launch
         self.interface = interface
         self.clients = clients
+        self.launch = launch
+        self.run = run
         self.icon = icon
         self.plugins = plugins
         self.plugin_order = plugin_order
@@ -110,9 +111,10 @@ class AppDefinition(object):
                self.display_name == other.display_name and \
                self.description == other.description and \
                self.platform == other.platform and \
-               self.launch == other.launch and \
                self.interface == other.interface and \
                self.clients == other.clients and \
+               self.launch == other.launch and \
+               self.run == other.run and \
                self.icon == other.icon
                
 def find_resource(resource, rospack=None):
@@ -187,7 +189,10 @@ def _AppDefinition_load_launch_entry(app_data, appfile="UNKNOWN", rospack=None):
     if rospack is None:
         rospack = rospkg.RosPack()
     try:
-        launch = find_resource(app_data['launch'], rospack=rospack)
+        launch_resource = app_data.get('launch', '')
+        if launch_resource == '':
+            return None
+        launch = find_resource(launch_resource, rospack=rospack)
         if not os.path.exists(launch):
             raise InvalidAppException("Malformed appfile [%s]: refers to launch that does not exist."%(appfile))
         return launch
@@ -195,6 +200,28 @@ def _AppDefinition_load_launch_entry(app_data, appfile="UNKNOWN", rospack=None):
         raise InvalidAppException("Malformed appfile [%s]: bad launch entry: %s"%(appfile, e))
     except NotFoundException:
         raise InvalidAppException("App file [%s] refers to launch that is not installed"%(appfile))
+    except ResourceNotFound as e:
+        raise InvalidAppException("App file [%s] refers to package that is not installed: %s"%(appfile, str(e)))
+
+def _AppDefinition_load_run_entry(app_data, appfile="UNKNOWN", rospack=None):
+    """
+    @raise InvalidAppExcetion: if app definition is invalid.
+    """
+    # load/validate run entry
+    if rospack is None:
+        rospack = rospkg.RosPack()
+    try:
+        run_resource = app_data.get('run', '')
+        if run_resource == '':
+            return None
+        run = find_resource(run_resource, rospack=rospack)
+        if not os.path.exists(run):
+            raise InvalidAppException("Malformed appfile [%s]: refers to run that does not exist."%(appfile))
+        return run
+    except ValueError as e:
+        raise InvalidAppException("Malformed appfile [%s]: bad run entry: %s"%(appfile, e))
+    except NotFoundException:
+        raise InvalidAppException("App file [%s] refers to run that is not installed"%(appfile))
     except ResourceNotFound as e:
         raise InvalidAppException("App file [%s] refers to package that is not installed: %s"%(appfile, str(e)))
 
@@ -295,9 +322,13 @@ def load_AppDefinition_from_file(appfile, appname, rospack=None):
     """
     with open(appfile,'r') as f:
         app_data = yaml.load(f.read())
-    for reqd in ['launch', 'interface', 'platform']:
+    for reqd in ['interface', 'platform']:
         if not reqd in app_data:
             raise InvalidAppException("Malformed appfile [%s], missing required key [%s]"%(appfile, reqd))
+    if not 'launch' in app_data and not 'run' in app_data:
+        raise InvalidAppException("Malformed appfile [%s], must have a [launch] or a [run] key"%(appfile))
+    if 'launch' in app_data and 'run' in app_data:
+        raise InvalidAppException("Malformed appfile [%s], cannot have both [launch] and [run] keys"%(appfile))
 
     display_name = app_data.get('display', appname)
     description = app_data.get('description', '')
@@ -306,6 +337,8 @@ def load_AppDefinition_from_file(appfile, appname, rospack=None):
     if rospack is None:
         rospack = rospkg.RosPack()
     launch = _AppDefinition_load_launch_entry(
+        app_data, appfile, rospack=rospack)
+    run = _AppDefinition_load_run_entry(
         app_data, appfile, rospack=rospack)
     interface = _AppDefinition_load_interface_entry(
         app_data, appfile, rospack=rospack)
@@ -317,7 +350,7 @@ def load_AppDefinition_from_file(appfile, appname, rospack=None):
     timeout = _AppDefinition_load_timeout_entry(app_data, appfile)
 
     return AppDefinition(appname, display_name, description, platform,
-                         launch, interface, clients, icon,
+                         interface, clients, launch, run, icon,
                          plugins, plugin_order, timeout)
     
 def load_AppDefinition_by_name(appname, rospack=None):
