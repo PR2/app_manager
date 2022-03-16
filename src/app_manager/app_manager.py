@@ -297,12 +297,13 @@ class AppManager(object):
             else:
                 self.stop_app(self._current_app_definition.name)
 
-        # TODO: the app list has already loaded the App data.  We should use that instead for consistency
-
         appname = req.name
         rospy.loginfo("Loading app: %s"%(appname))
         try:
-            app = load_AppDefinition_by_name(appname)
+            if self._app_list and self._app_list.get_app(appname):
+                app = self._app_list.get_app(appname)
+            else:
+                app = load_AppDefinition_by_name(appname)
         except ValueError as e:
             return StartAppResponse(started=False, message=str(e), error_code=StatusCodes.BAD_REQUEST)
         except InvalidAppException as e:
