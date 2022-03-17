@@ -38,6 +38,7 @@ import os
 import errno
 import yaml
 
+import roslaunch
 import roslib.names
 import rospkg
 from rospkg import ResourceNotFound
@@ -214,10 +215,15 @@ def _AppDefinition_load_run_entry(app_data, appfile="UNKNOWN", rospack=None):
         run_resource = app_data.get('run', '')
         if run_resource == '':
             return None
+
+        # check if file exists
         run = find_resource(run_resource, rospack=rospack)
         if not os.path.exists(run):
             raise InvalidAppException("Malformed appfile [%s]: refers to run that does not exist."%(appfile))
-        return run
+        # create node
+        p, a = roslib.names.package_resource_name(run_resource)
+        node = roslaunch.core.Node(p, a, output='screen')
+        return node
     except ValueError as e:
         raise InvalidAppException("Malformed appfile [%s]: bad run entry: %s"%(appfile, e))
     except NotFoundException:
