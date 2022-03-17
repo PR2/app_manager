@@ -519,7 +519,8 @@ class AppManager(object):
             self._launch.shutdown()
             if (self._exit_code is None
                     and len(self._launch.pm.dead_list) > 0):
-                self._exit_code = self._launch.pm.dead_list[0].exit_code
+                exit_codes = [p.exit_code for p in self._launch.pm.dead_list]
+                self._exit_code = max(exit_codes)
         if self._current_process:
             if (self._exit_code is None
                     and len(self._default_launch.pm.dead_list) > 0):
