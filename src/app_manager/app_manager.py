@@ -473,10 +473,7 @@ class AppManager(object):
 
             self._interface_sync = MasterSync(self._interface_master, foreign_pub_names=fp, local_pub_names=lp)
 
-            if app.launch:
-                thread.start_new_thread(self.app_monitor, ())
-            if app.run:
-                thread.start_new_thread(self.process_monitor, ())
+            thread.start_new_thread(self.app_monitor, (app.launch,))
 
             return StartAppResponse(started=True, message="app [%s] started"%(appname), namespace=self._app_interface)
         
@@ -606,39 +603,24 @@ class AppManager(object):
             rospy.logerr("Failed to reload app list: %s" % e)
         return EmptyResponse()
 
-    def process_monitor(self):
-        while self._current_process:
-            time.sleep(0.1)
-            proc = self._current_process
-            timeout = self._current_app_definition.timeout
-            appname = self._current_app_definition.name
-            now = rospy.Time.now()
-            if proc:
-                if proc.stopped:
-                    time.sleep(1.0)
-                    if not self._stopping:
-                        self.stop_app(appname)
-                    break
-                if (timeout is not None and
-                    self._start_time is not None and
-                    (now - self._start_time).to_sec() > timeout):
-                    self._stopped = True
-                    self.stop_app(appname)
-                    rospy.logerr(
-                        'app {} is stopped because of timeout: {}s'.format(
-                            appname, timeout))
-                    break
+    def app_monitor(self, is_launch):
+        def get_target():
+            if is_launch:
+                return self._launch
+            return self._current_process
+        def is_done(target):
+            if is_launch:
+                return (not target.pm or target.pm.done)
+            return target.stopped
 
-    def app_monitor(self):
-        while self._launch:
+        while get_target():
             time.sleep(0.1)
-            launch = self._launch
+            target = get_target()
             timeout = self._current_app_definition.timeout
             appname = self._current_app_definition.name
             now = rospy.Time.now()
-            if launch:
-                pm = launch.pm
-                if pm and pm.done:
+            if target:
+                if is_done(target):
                     time.sleep(1.0)
                     if not self._stopping:
                         self.stop_app(appname)
