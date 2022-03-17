@@ -638,18 +638,11 @@ class AppManager(object):
             now = rospy.Time.now()
             if launch:
                 pm = launch.pm
-                if pm:
-                    procs = pm.procs[:]
-                    if len(procs) > 0:
-                        if any([p.required for p in procs]):
-                            exit_codes = [
-                                p.exit_code for p in procs if p.required]
-                            self._exit_code = max(exit_codes)
-                    if pm.done:
-                        time.sleep(1.0)
-                        if not self._stopping:
-                            self.stop_app(appname)
-                        break
+                if pm and pm.done:
+                    time.sleep(1.0)
+                    if not self._stopping:
+                        self.stop_app(appname)
+                    break
                 if (timeout is not None and
                         self._start_time is not None and
                         (now - self._start_time).to_sec() > timeout):
