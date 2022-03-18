@@ -46,6 +46,7 @@ import yaml
 
 import rosgraph.names
 import rospy
+import roslib
 
 import roslaunch.config
 import roslaunch.core
@@ -174,6 +175,7 @@ class AppManager(object):
         self._stopping = None
         self._current_process = None
         self._current_plugins = None
+        self._current_plugin_processes = None
         self._plugin_context = None
         self._plugin_insts = None
         self._start_time = None
@@ -415,6 +417,7 @@ class AppManager(object):
                     N.remap_args.append((t, self._app_interface + '/' + t))
 
             # run plugin modules first
+            self._current_plugin_processes = []
             if self._current_plugins:
                 self._plugin_context = {}
                 self._plugin_insts = {}
@@ -450,6 +453,15 @@ class AppManager(object):
                         plugin_inst.app_manager_start_plugin(
                             app, self._plugin_context, plugin_args)
                         self._plugin_insts[plugin['module']] = plugin_inst
+                    if 'run' in plugin and plugin['run']:
+                        p, a = roslib.names.package_resource_name(plugin['run'])
+                        node = roslaunch.core.Node(p, a, output='screen')
+                        proc, success = self._default_launch.runner.launch_node(node)
+                        if not success:
+                            raise roslaunch.core.RLException(
+                                "failed to launch plugin %s/%s"%(node.package, node.type))
+                        self._current_plugin_processes.append(proc)
+
             # then, start plugin launches
             if self._plugin_launch:
                 self._plugin_launch.start()
@@ -504,6 +516,7 @@ class AppManager(object):
             self._stopping = None
             self._current_process = None
             self._current_plugins = None
+            self._current_plugin_processes = None
             self._plugin_context = None
             self._plugin_insts = None
             self._start_time = None
@@ -531,6 +544,9 @@ class AppManager(object):
                 "App stopped with exit code: {}".format(self._exit_code))
         if self._plugin_launch:
             self._plugin_launch.shutdown()
+        if self._current_plugin_processes:
+            for p in self._current_plugin_processes:
+                p.stop()
         if self._current_plugins:
             self._plugin_context['exit_code'] = self._exit_code
             self._plugin_context['stopped'] = self._stopped
