@@ -455,7 +455,8 @@ class AppManager(object):
                         self._plugin_insts[plugin['module']] = plugin_inst
                     if 'run' in plugin and plugin['run']:
                         p, a = roslib.names.package_resource_name(plugin['run'])
-                        node = roslaunch.core.Node(p, a, output='screen')
+                        args = plugin.get('run_args', None)
+                        node = roslaunch.core.Node(p, a, args=args, output='screen')
                         proc, success = self._default_launch.runner.launch_node(node)
                         if not success:
                             raise roslaunch.core.RLException(

@@ -204,6 +204,19 @@ def _AppDefinition_load_launch_entry(app_data, appfile="UNKNOWN", rospack=None):
     except ResourceNotFound as e:
         raise InvalidAppException("App file [%s] refers to package that is not installed: %s"%(appfile, str(e)))
 
+def _AppDefinition_load_run_args_entry(app_data, appfile="UNKNOWN"):
+    """
+    @raise InvalidAppException: if app definition is invalid.
+    """
+    # load/validate launch entry
+    try:
+        run_args = app_data.get('run_args', '')
+        if run_args == '':
+            return None
+        return run_args
+    except ValueError as e:
+        raise InvalidAppException("Malformed appfile [%s]: bad run_args entry: %s"%(appfile, e))
+
 def _AppDefinition_load_run_entry(app_data, appfile="UNKNOWN", rospack=None):
     """
     @raise InvalidAppExcetion: if app definition is invalid.
@@ -222,7 +235,8 @@ def _AppDefinition_load_run_entry(app_data, appfile="UNKNOWN", rospack=None):
             raise InvalidAppException("Malformed appfile [%s]: refers to run that does not exist."%(appfile))
         # create node
         p, a = roslib.names.package_resource_name(run_resource)
-        node = roslaunch.core.Node(p, a, output='screen')
+        args = _AppDefinition_load_run_args_entry(app_data, appfile)
+        node = roslaunch.core.Node(p, a, args=args, output='screen')
         return node
     except ValueError as e:
         raise InvalidAppException("Malformed appfile [%s]: bad run entry: %s"%(appfile, e))
