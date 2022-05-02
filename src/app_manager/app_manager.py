@@ -204,9 +204,11 @@ class AppManager(object):
         # end_time = time.time()
         # rospy.logerr('total time: {}'.format(end_time - start_time))
 
+        # show_summary keyword is added in melodic
+        # removing for kinetic compability
         rospy.loginfo("Initializing default launcher")
         self._default_launch = roslaunch.parent.ROSLaunchParent(
-            rospy.get_param("/run_id"), [], is_core=False, show_summary=False)
+            rospy.get_param("/run_id"), [], is_core=False)
         self._default_launch.start(auto_terminate=False)
 
     def shutdown(self):
