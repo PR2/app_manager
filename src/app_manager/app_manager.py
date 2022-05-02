@@ -174,6 +174,7 @@ class AppManager(object):
         self._stopped = None
         self._stopping = None
         self._current_process = None
+        self._timeout = None
         self._current_plugins = None
         self._current_plugin_processes = None
         self._plugin_context = None
@@ -516,6 +517,7 @@ class AppManager(object):
             self._stopped = None
             self._stopping = None
             self._current_process = None
+            self._timeout = None
             self._current_plugins = None
             self._current_plugin_processes = None
             self._plugin_context = None
@@ -553,6 +555,7 @@ class AppManager(object):
         if self._current_plugins:
             self._plugin_context['exit_code'] = self._exit_code
             self._plugin_context['stopped'] = self._stopped
+            self._plugin_context['timeout'] = self._timeout
             if 'stop_plugin_order' in self._current_app_definition.plugin_order:
                 plugin_names = [p['name'] for p in self._current_app_definition.plugins]
                 plugin_order = self._current_app_definition.plugin_order['stop_plugin_order']
@@ -650,6 +653,7 @@ class AppManager(object):
                         self._start_time is not None and
                         (now - self._start_time).to_sec() > timeout):
                     self._stopped = True
+                    self._timeout = True
                     self.stop_app(appname)
                     rospy.logerr(
                         'app {} is stopped because of timeout: {}s'.format(
@@ -674,12 +678,18 @@ class AppManager(object):
             else:
                 try:
                     if self._launch or self._current_process:
-                        rospy.loginfo("handle stop app: stopping app [%s]"%(appname))
-                        self._status_pub.publish(AppStatus(AppStatus.INFO, 'stopping %s'%(app.display_name)))
+                        rosinfo_message = "handle stop app: stopping app [%s]"%(appname)
+                        app_status_message = 'stopping %s'%(app.display_name)
                         self._stop_current()
-                        rospy.loginfo("handle stop app: app [%s] stopped"%(appname))
                         resp.stopped = True
                         resp.message = "%s stopped"%(appname)
+                        if self._timeout:
+                            resp.timeout = self._timeout
+                            rosinfo_message += "by timeout"
+                            app_status_message += "by timeout"
+                            resp.message += " by timeout"
+                        rospy.loginfo(rosinfo_message)
+                        self._status_pub.publish(AppStatus(AppStatus.INFO, app_status_message))
                     else:
                         rospy.loginfo("handle stop app: app [%s] is not running"%(appname))
                         resp.message = "app [%s] is not running"%(appname)
