@@ -202,6 +202,12 @@ class AppList(object):
             self.update()
         return [AppDefinition_to_App(ad) for ad in self.app_list]
 
+    def get_app(self, name):
+        for app in self.app_list:
+            if app.name == name:
+                return app
+        return None
+
     def add_directory(self, directory):
         if not os.path.exists(directory):
             raise IOError("applist directory %s does not exist." % directory)

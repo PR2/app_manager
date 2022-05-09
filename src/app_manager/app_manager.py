@@ -46,6 +46,7 @@ import yaml
 
 import rosgraph.names
 import rospy
+import roslib
 
 import roslaunch.config
 import roslaunch.core
@@ -172,8 +173,10 @@ class AppManager(object):
         self._exit_code = None
         self._stopped = None
         self._stopping = None
+        self._current_process = None
         self._timeout = None
         self._current_plugins = None
+        self._current_plugin_processes = None
         self._plugin_context = None
         self._plugin_insts = None
         self._start_time = None
@@ -200,6 +203,13 @@ class AppManager(object):
         # print(s.getvalue())
         # end_time = time.time()
         # rospy.logerr('total time: {}'.format(end_time - start_time))
+
+        # show_summary keyword is added in melodic
+        # removing for kinetic compability
+        rospy.loginfo("Initializing default launcher")
+        self._default_launch = roslaunch.parent.ROSLaunchParent(
+            rospy.get_param("/run_id"), [], is_core=False)
+        self._default_launch.start(auto_terminate=False)
 
     def shutdown(self):
         if self._api_sync:
@@ -298,12 +308,13 @@ class AppManager(object):
             else:
                 self.stop_app(self._current_app_definition.name)
 
-        # TODO: the app list has already loaded the App data.  We should use that instead for consistency
-
         appname = req.name
         rospy.loginfo("Loading app: %s"%(appname))
         try:
-            app = load_AppDefinition_by_name(appname)
+            if self._app_list and self._app_list.get_app(appname):
+                app = self._app_list.get_app(appname)
+            else:
+                app = load_AppDefinition_by_name(appname)
         except ValueError as e:
             return StartAppResponse(started=False, message=str(e), error_code=StatusCodes.BAD_REQUEST)
         except InvalidAppException as e:
@@ -316,15 +327,17 @@ class AppManager(object):
 
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'launching %s'%(app.display_name)))
 
-            if len(req.args) == 0:
-                launch_files = [app.launch]
-                rospy.loginfo("Launching: {}".format(app.launch))
-            else:
-                app_launch_args = []
-                for arg in req.args:
-                    app_launch_args.append("{}:={}".format(arg.key, arg.value))
-                launch_files = [(app.launch, app_launch_args)]
-                rospy.loginfo("Launching: {} {}".format(app.launch, app_launch_args))
+            launch_files = []
+            if app.launch:
+                if len(req.args) == 0:
+                    launch_files = [app.launch]
+                    rospy.loginfo("Launching: {}".format(app.launch))
+                else:
+                    app_launch_args = []
+                    for arg in req.args:
+                        app_launch_args.append("{}:={}".format(arg.key, arg.value))
+                    launch_files = [(app.launch, app_launch_args)]
+                    rospy.loginfo("Launching: {} {}".format(app.launch, app_launch_args))
 
             plugin_launch_files = []
             if app.plugins:
@@ -380,26 +393,34 @@ class AppManager(object):
                             .format(app_plugin_type))
 
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
-            self._launch = roslaunch.parent.ROSLaunchParent(
-                rospy.get_param("/run_id"), launch_files,
-                is_core=False, process_listeners=())
+            if app.launch:
+                self._launch = roslaunch.parent.ROSLaunchParent(
+                    rospy.get_param("/run_id"), launch_files,
+                    is_core=False, process_listeners=())
             if len(plugin_launch_files) > 0:
                 self._plugin_launch = roslaunch.parent.ROSLaunchParent(
                     rospy.get_param("/run_id"), plugin_launch_files,
                     is_core=False, process_listeners=())
 
-            self._launch._load_config()
+            if self._launch:
+                self._launch._load_config()
             if self._plugin_launch:
                 self._plugin_launch._load_config()
 
             #TODO: convert to method
-            for N in self._launch.config.nodes:
+            nodes = []
+            if self._launch:
+                nodes.extend(self._launch.config.nodes)
+            if app.run:
+                nodes.append(app.run)
+            for N in nodes:
                 for t in app.interface.published_topics.keys():
                     N.remap_args.append((t, self._app_interface + '/' + t))
                 for t in app.interface.subscribed_topics.keys():
                     N.remap_args.append((t, self._app_interface + '/' + t))
 
             # run plugin modules first
+            self._current_plugin_processes = []
             if self._current_plugins:
                 self._plugin_context = {}
                 self._plugin_insts = {}
@@ -435,12 +456,31 @@ class AppManager(object):
                         plugin_inst.app_manager_start_plugin(
                             app, self._plugin_context, plugin_args)
                         self._plugin_insts[plugin['module']] = plugin_inst
+                    if 'run' in plugin and plugin['run']:
+                        p, a = roslib.names.package_resource_name(plugin['run'])
+                        args = plugin.get('run_args', None)
+                        node = roslaunch.core.Node(p, a, args=args, output='screen')
+                        proc, success = self._default_launch.runner.launch_node(node)
+                        if not success:
+                            raise roslaunch.core.RLException(
+                                "failed to launch plugin %s/%s"%(node.package, node.type))
+                        self._current_plugin_processes.append(proc)
+
             # then, start plugin launches
             if self._plugin_launch:
                 self._plugin_launch.start()
 
             # finally launch main launch
-            self._launch.start()
+            if self._launch:
+                self._launch.start()
+            if app.run:
+                node = app.run
+                proc, success = self._default_launch.runner.launch_node(node)
+                if not success:
+                    raise roslaunch.core.RLException(
+                        "failed to launch %s/%s"%(node.package, node.type))
+                self._current_process = proc
+
             if app.timeout is not None:
                 self._start_time = rospy.Time.now()
 
@@ -449,7 +489,7 @@ class AppManager(object):
 
             self._interface_sync = MasterSync(self._interface_master, foreign_pub_names=fp, local_pub_names=lp)
 
-            thread.start_new_thread(self.app_monitor,())
+            thread.start_new_thread(self.app_monitor, (app.launch,))
 
             return StartAppResponse(started=True, message="app [%s] started"%(appname), namespace=self._app_interface)
         
@@ -478,8 +518,10 @@ class AppManager(object):
             self._exit_code = None
             self._stopped = None
             self._stopping = None
+            self._current_process = None
             self._timeout = None
             self._current_plugins = None
+            self._current_plugin_processes = None
             self._plugin_context = None
             self._plugin_insts = None
             self._start_time = None
@@ -494,13 +536,24 @@ class AppManager(object):
         if self._launch:
             self._launch.shutdown()
             if (self._exit_code is None
+                    and self._launch.pm
                     and len(self._launch.pm.dead_list) > 0):
-                self._exit_code = self._launch.pm.dead_list[0].exit_code
-            if not self._exit_code is None and self._exit_code > 0:
-                rospy.logerr(
-                    "App stopped with exit code: {}".format(self._exit_code))
+                exit_codes = [p.exit_code for p in self._launch.pm.dead_list]
+                self._exit_code = max(exit_codes)
+        if self._current_process:
+            self._current_process.stop()
+            if (self._exit_code is None
+                    and self._default_launch.pm
+                    and len(self._default_launch.pm.dead_list) > 0):
+                self._exit_code = self._default_launch.pm.dead_list[0].exit_code
+        if not self._exit_code is None and self._exit_code > 0:
+            rospy.logerr(
+                "App stopped with exit code: {}".format(self._exit_code))
         if self._plugin_launch:
             self._plugin_launch.shutdown()
+        if self._current_plugin_processes:
+            for p in self._current_plugin_processes:
+                p.stop()
         if self._current_plugins:
             self._plugin_context['exit_code'] = self._exit_code
             self._plugin_context['stopped'] = self._stopped
@@ -576,27 +629,28 @@ class AppManager(object):
             rospy.logerr("Failed to reload app list: %s" % e)
         return EmptyResponse()
 
-    def app_monitor(self):
-        while self._launch:
+    def app_monitor(self, is_launch):
+        def get_target():
+            if is_launch:
+                return self._launch
+            return self._current_process
+        def is_done(target):
+            if is_launch:
+                return (not target.pm or target.pm.done)
+            return target.stopped
+
+        while get_target():
             time.sleep(0.1)
-            launch = self._launch
+            target = get_target()
             timeout = self._current_app_definition.timeout
             appname = self._current_app_definition.name
             now = rospy.Time.now()
-            if launch:
-                pm = launch.pm
-                if pm:
-                    procs = pm.procs[:]
-                    if len(procs) > 0:
-                        if any([p.required for p in procs]):
-                            exit_codes = [
-                                p.exit_code for p in procs if p.required]
-                            self._exit_code = max(exit_codes)
-                    if pm.done:
-                        time.sleep(1.0)
-                        if not self._stopping:
-                            self.stop_app(appname)
-                        break
+            if target:
+                if is_done(target):
+                    time.sleep(1.0)
+                    if not self._stopping:
+                        self.stop_app(appname)
+                    break
                 if (timeout is not None and
                         self._start_time is not None and
                         (now - self._start_time).to_sec() > timeout):
@@ -625,7 +679,7 @@ class AppManager(object):
                 resp.message = "app %s is not running"%(appname)                    
             else:
                 try:
-                    if self._launch:
+                    if self._launch or self._current_process:
                         rosinfo_message = "handle stop app: stopping app [%s]"%(appname)
                         app_status_message = 'stopping %s'%(app.display_name)
                         self._stop_current()
@@ -644,6 +698,7 @@ class AppManager(object):
                         resp.error_code = StatusCodes.NOT_RUNNING
                 finally:
                     self._launch = None
+                    self._current_process = None
                     self._set_current_app(None, None)
 
         except Exception as e:
