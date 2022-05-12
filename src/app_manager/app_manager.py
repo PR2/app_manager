@@ -646,6 +646,19 @@ class AppManager(object):
             appname = self._current_app_definition.name
             now = rospy.Time.now()
             if target:
+                if self._launch:
+                    pm = self._launch.pm
+                elif self._current_process:
+                    pm = self._default_launch.pm
+                else:
+                    pm = None
+                if pm:
+                    procs = pm.procs[:]
+                    if len(procs) > 0:
+                        if any([p.required for p in procs]):
+                            exit_codes = [
+                                p.exit_code for p in procs if p.required]
+                            self._exit_code = max(exit_codes)
                 if is_done(target):
                     time.sleep(1.0)
                     if not self._stopping:
