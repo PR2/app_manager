@@ -55,13 +55,23 @@ class StopAppTest(unittest.TestCase):
         rospy.logwarn("{} received".format(msg))
         self.msg = msg
         message = eval(msg.data)
-        if message == {'start_plugin': {'fuga': 300, 'hoge': 100}}:
+        if ('start_plugin' in message
+                and message['start_plugin']['fuga'] == 300
+                and message['start_plugin']['hoge'] == 100):
             self.msg_started = True
-        if message == {'stop_plugin': {'fuga': 3000, 'hoge': 1000}}:
+        if ('stop_plugin' in message
+                and message['stop_plugin']['fuga'] == 3000
+                and message['stop_plugin']['hoge'] == 1000):
             self.msg_stopped = True
-        if message == {'param1': 'hello', 'param2': 'world'}:
+        if ('param1' in message
+                and 'param2' in message
+                and message['param1'] == 'hello'
+                and message['param2'] == 'world'):
             self.msg_plugin_started = True
-        if message == {'param1': 'param1', 'param2': 'param2'}:
+        if ('param1' in message
+                and 'param2' in message
+                and message['param1'] == 'param1'
+                and message['param2'] == 'param2'):
             self.msg_app_started = True
         self.msg_received = self.msg_received + 1
 
@@ -93,13 +103,16 @@ class StopAppTest(unittest.TestCase):
         start_res = self.start.call(start_req)
         rospy.logwarn('start app {}'.format(start_res))
         self.assertEqual(start_res.error_code, 0)
-        while (not rospy.is_shutdown()) and self.msg_started == False:
+        while (not rospy.is_shutdown()
+                and not self.msg_started):
             rospy.logwarn('Wait for start message received..')
             rospy.sleep(1)
 
         # check app and plugin both started
-        while (not rospy.is_shutdown()) and self.msg_app_started == False and self.msg_plugin_started == False:
-            rospy.logwarn('Wait for app/pugin message received..')
+        while (not rospy.is_shutdown()
+                and not self.msg_app_started
+                and not self.msg_plugin_started):
+            rospy.logwarn('Wait for app/plugin message received..')
             rospy.sleep(1)
 
         # stop plugin
@@ -108,8 +121,9 @@ class StopAppTest(unittest.TestCase):
         rospy.logwarn('stop app {}'.format(stop_res))
         self.assertEqual(stop_res.error_code, 0)
 
-        while (not rospy.is_shutdown()) and self.msg_stopped == False:
-            rospy.logwarn('Wait for start message received..')
+        while (not rospy.is_shutdown()
+                and not self.msg_stopped):
+            rospy.logwarn('Wait for stop message received..')
             rospy.sleep(1)
 
 
