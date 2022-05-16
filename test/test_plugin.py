@@ -42,6 +42,7 @@ import rospy
 import rostest
 import rosunit
 
+from app_manager.msg import KeyValue
 from app_manager.srv import *
 from std_msgs.msg import String
 
@@ -172,6 +173,42 @@ class StopAppTest(unittest.TestCase):
         self.assertEqual(self.msg_ctx_exit_code, None)
         self.assertEqual(self.msg_ctx_stopped, True)
         self.assertEqual(self.msg_ctx_timeout, True)
+
+    def test_start_stop_app_fail(self):
+        # wait for plugins
+        list_req = ListAppsRequest()
+        list_res = ListAppsResponse()
+        while not 'app_manager/test_plugin' in list(map(lambda x: x.name, list_res.available_apps)):
+            list_res = self.list.call(list_req)
+            # rospy.logwarn("received 'list_apps' {}".format(list_res))
+            time.sleep(1)
+        # start plugin
+        start_req = StartAppRequest(
+            name='app_manager/test_plugin',
+            args=[KeyValue(key='fail', value='true')])
+        start_res = self.start.call(start_req)
+        rospy.logwarn('start app {}'.format(start_res))
+        self.assertEqual(start_res.error_code, 0)
+        while (not rospy.is_shutdown()
+                and not self.msg_started):
+            rospy.logwarn('Wait for start message received..')
+            rospy.sleep(1)
+
+        # check app and plugin both started
+        while (not rospy.is_shutdown()
+                and not self.msg_app_started
+                and not self.msg_plugin_started):
+            rospy.logwarn('Wait for app/plugin message received..')
+            rospy.sleep(1)
+
+        while (not rospy.is_shutdown()
+                and not self.msg_stopped):
+            rospy.logwarn('Wait for stop message received..')
+            rospy.sleep(1)
+
+        self.assertEqual(self.msg_ctx_exit_code, 1)
+        self.assertEqual(self.msg_ctx_stopped, None)
+        self.assertEqual(self.msg_ctx_timeout, None)
 
 
 if __name__ == '__main__':

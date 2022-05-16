@@ -1,11 +1,13 @@
 <launch>
   <arg name="param1" default="param1" />
   <arg name="param2" default="param2" />
+  <arg name="fail" default="false" />
 
   <node name="$(anon test_plugin)" pkg="app_manager" type="sample_node.py" required="true" output="screen">
     <rosparam subst_value="true">
       param1: $(arg param1)
       param2: $(arg param2)
+      fail: $(arg fail)
     </rosparam>
   </node>
 </launch>
