@@ -69,7 +69,7 @@ class StopAppTest(unittest.TestCase):
         self.msg = None
         self.msg_received = 0
         self.msg_started = False
-        self.msg_stop = False
+        self.msg_stopped = False
         self.msg_plugin_started = False
         self.msg_app_started = False
         rospy.Subscriber('/test_plugin', String, self.cb)
