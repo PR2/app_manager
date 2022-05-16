@@ -1,0 +1,17 @@
+<launch>
+  <arg name="port" default="9090" />
+
+  <!-- to read app_manager plugin="${prefix}/test_plugin.yaml" in test_plugin/package.xml -->
+  <env name="ROS_PACKAGE_PATH" value="$(find app_manager)/test/plugin:$(env ROS_PACKAGE_PATH)" />
+  <!-- to import test_plugin/test_plugin.py -->
+  <env name="PYTHONPATH" value="$(find app_manager)/test/plugin:$(env PYTHONPATH)" />
+
+  <node pkg="app_manager" type="appmaster" name="appmaster"
+        args="-p 11313" />
+  <node pkg="app_manager" type="app_manager" name="app_manager" output="screen">
+    <param name="interface_master" value="http://localhost:11313"/>
+  </node>
+
+  <test test-name="test_start_stop_plugin_timeout" pkg="app_manager" type="test_plugin.py" name="test_start_stop_plugin_timeout" />
+
+</launch>
