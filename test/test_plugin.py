@@ -60,8 +60,14 @@ class StopAppTest(unittest.TestCase):
                 and message['start_plugin']['hoge'] == 100):
             self.msg_started = True
         if ('stop_plugin' in message
+                and 'exit_code' in message
+                and 'stopped' in message
+                and 'timeout' in message
                 and message['stop_plugin']['fuga'] == 3000
                 and message['stop_plugin']['hoge'] == 1000):
+            self.msg_ctx_exit_code = message['exit_code']
+            self.msg_ctx_stopped = message['stopped']
+            self.msg_ctx_timeout = message['timeout']
             self.msg_stopped = True
         if ('param1' in message
                 and 'param2' in message
@@ -82,6 +88,9 @@ class StopAppTest(unittest.TestCase):
         self.msg_stopped = False
         self.msg_plugin_started = False
         self.msg_app_started = False
+        self.msg_ctx_exit_code = None
+        self.msg_ctx_stopped = None
+        self.msg_ctx_timeout = None
         rospy.Subscriber('/test_plugin', String, self.cb)
         rospy.wait_for_service('/robot/list_apps')
         rospy.wait_for_service('/robot/start_app')
@@ -126,6 +135,9 @@ class StopAppTest(unittest.TestCase):
             rospy.logwarn('Wait for stop message received..')
             rospy.sleep(1)
 
+        self.assertEqual(self.msg_ctx_exit_code, None)
+        self.assertEqual(self.msg_ctx_stopped, True)
+        self.assertEqual(self.msg_ctx_timeout, None)
 
 if __name__ == '__main__':
     try:
