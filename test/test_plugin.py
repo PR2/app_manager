@@ -86,7 +86,7 @@ class StopAppTest(unittest.TestCase):
         list_res = ListAppsResponse()
         while not 'app_manager/test_plugin' in list(map(lambda x: x.name, list_res.available_apps)):
             list_res = self.list.call(list_req)
-            rospy.logwarn("received 'list_apps' {}".format(list_res))
+            # rospy.logwarn("received 'list_apps' {}".format(list_res))
             time.sleep(1)
         # start plugin
         start_req = StartAppRequest(name='app_manager/test_plugin')
