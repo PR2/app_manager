@@ -125,6 +125,7 @@ class AppManager(object):
     def __init__(
             self, robot_name, interface_master, app_list,
             exchange, plugins=None, enable_app_replacement=True,
+            sigint_timeout=15.0, sigterm_timeout=2.0,
     ):
         self._robot_name = robot_name
         self._interface_master = interface_master
@@ -133,6 +134,8 @@ class AppManager(object):
         self._exchange = exchange
         self._plugins = plugins
         self._enable_app_replacement = enable_app_replacement
+        self._sigint_timeout = sigint_timeout
+        self._sigterm_timeout = sigterm_timeout
             
         rospy.loginfo("Starting app manager for %s"%self._robot_name)
 
@@ -396,11 +399,15 @@ class AppManager(object):
             if app.launch:
                 self._launch = roslaunch.parent.ROSLaunchParent(
                     rospy.get_param("/run_id"), launch_files,
-                    is_core=False, process_listeners=())
+                    is_core=False, process_listeners=(),
+                    sigint_timeout=self._sigint_timeout,
+                    sigterm_timeout=self._sigterm_timeout)
             if len(plugin_launch_files) > 0:
                 self._plugin_launch = roslaunch.parent.ROSLaunchParent(
                     rospy.get_param("/run_id"), plugin_launch_files,
-                    is_core=False, process_listeners=())
+                    is_core=False, process_listeners=(),
+                    sigint_timeout=self._sigint_timeout,
+                    sigterm_timeout=self._sigterm_timeout)
 
             if self._launch:
                 self._launch._load_config()
