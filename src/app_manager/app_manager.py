@@ -211,7 +211,9 @@ class AppManager(object):
         # removing for kinetic compability
         rospy.loginfo("Initializing default launcher")
         self._default_launch = roslaunch.parent.ROSLaunchParent(
-            rospy.get_param("/run_id"), [], is_core=False)
+            rospy.get_param("/run_id"), [], is_core=False,
+            sigint_timeout=self._sigint_timeout,
+            sigterm_timeout=self._sigterm_timeout)
         self._default_launch.start(auto_terminate=False)
 
     def shutdown(self):
