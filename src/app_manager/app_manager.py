@@ -210,10 +210,16 @@ class AppManager(object):
         # show_summary keyword is added in melodic
         # removing for kinetic compability
         rospy.loginfo("Initializing default launcher")
-        self._default_launch = roslaunch.parent.ROSLaunchParent(
-            rospy.get_param("/run_id"), [], is_core=False,
-            sigint_timeout=self._sigint_timeout,
-            sigterm_timeout=self._sigterm_timeout)
+        try:
+            self._default_launch = roslaunch.parent.ROSLaunchParent(
+                rospy.get_param("/run_id"), [], is_core=False,
+                sigint_timeout=self._sigint_timeout,
+                sigterm_timeout=self._sigterm_timeout)
+        except TypeError:
+            # ROSLaunchParent() does not have sigint/sigterm_timeout argument
+            # if roslaunch < 1.14.13 or < 1.15.5
+            self._default_launch = roslaunch.parent.ROSLaunchParent(
+                rospy.get_param("/run_id"), [], is_core=False)
         self._default_launch.start(auto_terminate=False)
 
     def shutdown(self):
@@ -399,17 +405,31 @@ class AppManager(object):
 
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
             if app.launch:
-                self._launch = roslaunch.parent.ROSLaunchParent(
-                    rospy.get_param("/run_id"), launch_files,
-                    is_core=False, process_listeners=(),
-                    sigint_timeout=self._sigint_timeout,
-                    sigterm_timeout=self._sigterm_timeout)
+                try:
+                    self._launch = roslaunch.parent.ROSLaunchParent(
+                        rospy.get_param("/run_id"), launch_files,
+                        is_core=False, process_listeners=(),
+                        sigint_timeout=self._sigint_timeout,
+                        sigterm_timeout=self._sigterm_timeout)
+                except TypeError:
+                    # ROSLaunchParent() does not have sigint/sigterm_timeout argument
+                    # if roslaunch < 1.14.13 or < 1.15.5
+                    self._launch = roslaunch.parent.ROSLaunchParent(
+                        rospy.get_param("/run_id"), launch_files,
+                        is_core=False, process_listeners=())
             if len(plugin_launch_files) > 0:
-                self._plugin_launch = roslaunch.parent.ROSLaunchParent(
-                    rospy.get_param("/run_id"), plugin_launch_files,
-                    is_core=False, process_listeners=(),
-                    sigint_timeout=self._sigint_timeout,
-                    sigterm_timeout=self._sigterm_timeout)
+                try:
+                    self._plugin_launch = roslaunch.parent.ROSLaunchParent(
+                        rospy.get_param("/run_id"), plugin_launch_files,
+                        is_core=False, process_listeners=(),
+                        sigint_timeout=self._sigint_timeout,
+                        sigterm_timeout=self._sigterm_timeout)
+                except TypeError:
+                    # ROSLaunchParent() does not have sigint/sigterm_timeout argument
+                    # if roslaunch < 1.14.13 or < 1.15.5
+                    self._plugin_launch = roslaunch.parent.ROSLaunchParent(
+                        rospy.get_param("/run_id"), plugin_launch_files,
+                        is_core=False, process_listeners=())
 
             if self._launch:
                 self._launch._load_config()
