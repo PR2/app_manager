@@ -295,18 +295,6 @@ class AppManager(object):
 
     def handle_start_app(self, req):
         rospy.loginfo("start_app: %s"%(req.name))
-        if self._current_app:
-            if self._current_app_definition.name == req.name:
-                return StartAppResponse(started=True, message="app [%s] already started"%(req.name), namespace=self._app_interface)
-            elif not self._enable_app_replacement:
-                return StartAppResponse(
-                    started=False,
-                    message="app [%s] is denied because app [%s] is already running."
-                            % (req.name, self._current_app_definition.name),
-                    namespace=self._app_interface,
-                    error_code=StatusCodes.MULTIAPP_NOT_SUPPORTED)
-            else:
-                self.stop_app(self._current_app_definition.name)
 
         appname = req.name
         rospy.loginfo("Loading app: %s"%(appname))
@@ -322,8 +310,29 @@ class AppManager(object):
         except NotFoundException as e:
             return StartAppResponse(started=False, message=str(e), error_code=StatusCodes.NOT_FOUND)
 
+        # Only support run apps with no plugins to run in parallel
+        # TODO: use multiplexers to enable safe resource sharing
+        print ('Current App: {}'.format(self._current_app))
+        if self._current_app and (app.launch or app.plugins):
+            if self._current_app_definition.name == req.name:
+                return StartAppResponse(started=True, message="app [%s] already started"%(req.name), namespace=self._app_interface)
+            elif not self._enable_app_replacement:
+                return StartAppResponse(
+                    started=False,
+                    message="app [%s] is denied because app [%s] is already running."
+                            % (req.name, self._current_app_definition.name),
+                    namespace=self._app_interface,
+                    error_code=StatusCodes.MULTIAPP_NOT_SUPPORTED)
+            else:
+                self.stop_app(self._current_app_definition.name)
+
         try:
-            self._set_current_app(App(name=appname), app)
+            is_main_app = self._current_app is None
+            has_plugin = False
+
+            print('App: {} main: {} plugins: {}'.format(appname, is_main_app, has_plugin))
+            if is_main_app:
+                self._set_current_app(App(name=appname), app)
 
             self._status_pub.publish(AppStatus(AppStatus.INFO, 'launching %s'%(app.display_name)))
 
@@ -393,23 +402,21 @@ class AppManager(object):
                             .format(app_plugin_type))
 
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
+            has_plugin = len(plugin_launch_files) > 0
             if app.launch:
                 self._launch = roslaunch.parent.ROSLaunchParent(
                     rospy.get_param("/run_id"), launch_files,
                     is_core=False, process_listeners=())
-            if len(plugin_launch_files) > 0:
+                self._launch._load_config()
+            if has_plugin:
                 self._plugin_launch = roslaunch.parent.ROSLaunchParent(
                     rospy.get_param("/run_id"), plugin_launch_files,
                     is_core=False, process_listeners=())
-
-            if self._launch:
-                self._launch._load_config()
-            if self._plugin_launch:
                 self._plugin_launch._load_config()
 
             #TODO: convert to method
             nodes = []
-            if self._launch:
+            if app.launch:
                 nodes.extend(self._launch.config.nodes)
             if app.run:
                 nodes.append(app.run)
@@ -420,8 +427,9 @@ class AppManager(object):
                     N.remap_args.append((t, self._app_interface + '/' + t))
 
             # run plugin modules first
-            self._current_plugin_processes = []
-            if self._current_plugins:
+            if is_main_app:
+                self._current_plugin_processes = []
+            if has_plugin and self._current_plugins:
                 self._plugin_context = {}
                 self._plugin_insts = {}
                 for app_plugin, plugin in self._current_plugins:
@@ -467,11 +475,11 @@ class AppManager(object):
                         self._current_plugin_processes.append(proc)
 
             # then, start plugin launches
-            if self._plugin_launch:
+            if has_plugin:
                 self._plugin_launch.start()
 
             # finally launch main launch
-            if self._launch:
+            if app.launch:
                 self._launch.start()
             if app.run:
                 node = app.run
@@ -479,17 +487,18 @@ class AppManager(object):
                 if not success:
                     raise roslaunch.core.RLException(
                         "failed to launch %s/%s"%(node.package, node.type))
-                self._current_process = proc
+                if is_main_app:
+                    self._current_process = proc
 
-            if app.timeout is not None:
+            if is_main_app and app.timeout is not None:
                 self._start_time = rospy.Time.now()
 
             fp = [self._app_interface + '/' + x for x in app.interface.subscribed_topics.keys()]
             lp = [self._app_interface + '/' + x for x in app.interface.published_topics.keys()]
 
             self._interface_sync = MasterSync(self._interface_master, foreign_pub_names=fp, local_pub_names=lp)
-
-            thread.start_new_thread(self.app_monitor, (app.launch,))
+            if is_main_app:
+                thread.start_new_thread(self.app_monitor, (app.launch,))
 
             return StartAppResponse(started=True, message="app [%s] started"%(appname), namespace=self._app_interface)
         
