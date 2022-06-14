@@ -459,7 +459,8 @@ class AppManager(object):
                     if 'run' in plugin and plugin['run']:
                         p, a = roslib.names.package_resource_name(plugin['run'])
                         args = plugin.get('run_args', None)
-                        node = roslaunch.core.Node(p, a, args=args, output='screen')
+                        node = roslaunch.core.Node(p, a, args=args, output='screen',
+                                                   required=False)
                         proc, success = self._default_launch.runner.launch_node(node)
                         if not success:
                             raise roslaunch.core.RLException(
@@ -638,6 +639,15 @@ class AppManager(object):
             if is_launch:
                 return (not target.pm or target.pm.done)
             return target.stopped
+        def check_required(target):
+            # required nodes are not registered to the dead_list when finished
+            # so we need to constantly check its return value
+            if is_launch and target.pm:
+                # run nodes are never registered as required
+                procs = target.pm.procs[:]
+                exit_codes = [p.exit_code for p in procs if p.required]
+                if exit_codes:
+                    self._exit_code = max(exit_codes)
 
         while get_target():
             time.sleep(0.1)
@@ -646,6 +656,7 @@ class AppManager(object):
             appname = self._current_app_definition.name
             now = rospy.Time.now()
             if target:
+                check_required(target)
                 if is_done(target):
                     time.sleep(1.0)
                     if not self._stopping:
