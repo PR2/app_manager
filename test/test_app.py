@@ -163,9 +163,9 @@ class AppTest(unittest.TestCase):
 
         #monkey patch in for coverage
         import errno
-        def fake_load_enoent(*args):
+        def fake_load_enoent(*args, **kwargs):
             raise IOError(errno.ENOENT, "fnf")
-        def fake_load_gen(*args):
+        def fake_load_gen(*args, **kwargs):
             raise IOError()
         import app_manager.app
         load_actual = app_manager.app.load_AppDefinition_from_file

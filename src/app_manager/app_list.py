@@ -44,6 +44,8 @@ import rospy
 import sys
 import yaml
 
+import rospkg
+
 from .app import load_AppDefinition_by_name
 from .msg import App, ClientApp, KeyValue, Icon
 from .exceptions import AppException, InvalidAppException, NotFoundException
@@ -100,22 +102,24 @@ class InstalledFile(object):
 
     def _load(self):
         available_apps = []
+        rospack = rospkg.RosPack()
         with open(self.filename) as f:
             installed_data = yaml.load(f)
-            for reqd in ['apps']:
-                if not reqd in installed_data:
-                    raise InvalidAppException("installed file [%s] is missing required key [%s]"%(self.filename, reqd))
-            for app in installed_data['apps']:
-                for areqd in ['app']:
-                    if not areqd in app:
-                        raise InvalidAppException("installed file [%s] app definition is missing required key [%s]"%(self.filename, areqd))
-                try:
-                    available_apps.append(load_AppDefinition_by_name(app['app']))
-                except NotFoundException as e:
-                    rospy.logerr(e)
-                    continue
-                except Exception as e:
-                    raise e
+        for reqd in ['apps']:
+            if not reqd in installed_data:
+                raise InvalidAppException("installed file [%s] is missing required key [%s]"%(self.filename, reqd))
+        for app in installed_data['apps']:
+            for areqd in ['app']:
+                if not areqd in app:
+                    raise InvalidAppException("installed file [%s] app definition is missing required key [%s]"%(self.filename, areqd))
+            try:
+                available_apps.append(
+                    load_AppDefinition_by_name(app['app'], rospack=rospack))
+            except NotFoundException as e:
+                rospy.logerr(e)
+                continue
+            except Exception as e:
+                raise e
 
         self.available_apps = available_apps
 
@@ -197,6 +201,12 @@ class AppList(object):
         if not self.app_list:
             self.update()
         return [AppDefinition_to_App(ad) for ad in self.app_list]
+
+    def get_app(self, name):
+        for app in self.app_list:
+            if app.name == name:
+                return app
+        return None
 
     def add_directory(self, directory):
         if not os.path.exists(directory):

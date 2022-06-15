@@ -1,3 +1,5 @@
 apps:
   - app: app_manager/test_plugin # look for plugin.app
     display: Test app plugin
+  - app: app_manager/test_plugin_timeout
+    display: Test app plugin timeout
