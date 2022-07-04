@@ -15,6 +15,14 @@ class TestPlugin(AppManagerPlugin):
         self.pub.publish("{{'start_plugin': {}}}".format(plugin_args))
 
     def app_manager_stop_plugin(self, app, ctx, plugin_args):
-        self.pub.publish("{{'stop_plugin': {}}}".format(plugin_args))
+        self.pub.publish(
+            "{{'stop_plugin': {},"
+            "'exit_code': {},"
+            "'stopped': {},"
+            "'timeout': {},"
+            "}}".format(plugin_args,
+                        ctx['exit_code'],
+                        ctx['stopped'],
+                        ctx['timeout']))
         ctx['test_app_exit_code'] = 0
         return ctx

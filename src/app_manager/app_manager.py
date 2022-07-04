@@ -125,6 +125,7 @@ class AppManager(object):
     def __init__(
             self, robot_name, interface_master, app_list,
             exchange, plugins=None, enable_app_replacement=True,
+            sigint_timeout=15.0, sigterm_timeout=2.0,
     ):
         self._robot_name = robot_name
         self._interface_master = interface_master
@@ -133,6 +134,8 @@ class AppManager(object):
         self._exchange = exchange
         self._plugins = plugins
         self._enable_app_replacement = enable_app_replacement
+        self._sigint_timeout = sigint_timeout
+        self._sigterm_timeout = sigterm_timeout
             
         rospy.loginfo("Starting app manager for %s"%self._robot_name)
 
@@ -207,8 +210,16 @@ class AppManager(object):
         # show_summary keyword is added in melodic
         # removing for kinetic compability
         rospy.loginfo("Initializing default launcher")
-        self._default_launch = roslaunch.parent.ROSLaunchParent(
-            rospy.get_param("/run_id"), [], is_core=False)
+        try:
+            self._default_launch = roslaunch.parent.ROSLaunchParent(
+                rospy.get_param("/run_id"), [], is_core=False,
+                sigint_timeout=self._sigint_timeout,
+                sigterm_timeout=self._sigterm_timeout)
+        except TypeError:
+            # ROSLaunchParent() does not have sigint/sigterm_timeout argument
+            # if roslaunch < 1.14.13 or < 1.15.5
+            self._default_launch = roslaunch.parent.ROSLaunchParent(
+                rospy.get_param("/run_id"), [], is_core=False)
         self._default_launch.start(auto_terminate=False)
 
     def shutdown(self):
@@ -404,9 +415,18 @@ class AppManager(object):
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
             has_plugin = len(plugin_launch_files) > 0
             if app.launch:
-                self._launch = roslaunch.parent.ROSLaunchParent(
-                    rospy.get_param("/run_id"), launch_files,
-                    is_core=False, process_listeners=())
+                try:
+                    self._launch = roslaunch.parent.ROSLaunchParent(
+                        rospy.get_param("/run_id"), launch_files,
+                        is_core=False, process_listeners=(),
+                        sigint_timeout=self._sigint_timeout,
+                        sigterm_timeout=self._sigterm_timeout)
+                except TypeError:
+                    # ROSLaunchParent() does not have sigint/sigterm_timeout argument
+                    # if roslaunch < 1.14.13 or < 1.15.5
+                    self._launch = roslaunch.parent.ROSLaunchParent(
+                        rospy.get_param("/run_id"), launch_files,
+                        is_core=False, process_listeners=())
                 self._launch._load_config()
             if has_plugin:
                 self._plugin_launch = roslaunch.parent.ROSLaunchParent(
@@ -467,7 +487,8 @@ class AppManager(object):
                     if 'run' in plugin and plugin['run']:
                         p, a = roslib.names.package_resource_name(plugin['run'])
                         args = plugin.get('run_args', None)
-                        node = roslaunch.core.Node(p, a, args=args, output='screen')
+                        node = roslaunch.core.Node(p, a, args=args, output='screen',
+                                                   required=False)
                         proc, success = self._default_launch.runner.launch_node(node)
                         if not success:
                             raise roslaunch.core.RLException(
@@ -647,6 +668,15 @@ class AppManager(object):
             if is_launch:
                 return (not target.pm or target.pm.done)
             return target.stopped
+        def check_required(target):
+            # required nodes are not registered to the dead_list when finished
+            # so we need to constantly check its return value
+            if is_launch and target.pm:
+                # run nodes are never registered as required
+                procs = target.pm.procs[:]
+                exit_codes = [p.exit_code for p in procs if p.required]
+                if exit_codes:
+                    self._exit_code = max(exit_codes)
 
         while get_target():
             time.sleep(0.1)
@@ -655,6 +685,7 @@ class AppManager(object):
             appname = self._current_app_definition.name
             now = rospy.Time.now()
             if target:
+                check_required(target)
                 if is_done(target):
                     time.sleep(1.0)
                     if not self._stopping:

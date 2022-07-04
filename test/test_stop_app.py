@@ -61,7 +61,7 @@ class StopAppTest(unittest.TestCase):
         list_res = ListAppsResponse()
         while not 'app_manager/appA' in list(map(lambda x: x.name, list_res.running_apps)):
             list_res = self.list.call(list_req)
-            rospy.logwarn("received 'list_apps' {}".format(list_res))
+            # rospy.logwarn("received 'list_apps' {}".format(list_res))
             time.sleep(1)
 
         stop_req = StopAppRequest(name='app_manager/appA')
