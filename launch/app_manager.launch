@@ -3,6 +3,8 @@
   <arg name="master" default="true" doc="launch master if enabled"/>
   <arg name="master_address" default="localhost" doc="address for app_manager master"/>
   <arg name="master_port" default="11313" doc="port for app_manager master"/>
+  <arg name="sigint_timeout" default="15.0" doc="Time between sending sigint and sending sigterm to ROSLaunchParent"/>
+  <arg name="sigterm_timeout" default="2.0" doc="Time between sending sigterm and sending sigkill to ROSLaunchParent"/>
 
   <!-- app list -->
   <arg name="use_applist" default="false" doc="load apps from applist argument"/>
@@ -21,5 +23,7 @@
         args="$(arg app_manager_args)"
         output="screen" respawn="$(arg respawn)">
     <param name="interface_master" value="http://$(arg master_address):$(arg master_port)"/>
+    <param name="sigint_timeout" value="$(arg sigint_timeout)"/>
+    <param name="sigterm_timeout" value="$(arg sigterm_timeout)"/>
   </node>
 </launch>
