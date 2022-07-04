@@ -64,6 +64,8 @@ def main():
 
     robot_name = rospy.get_param('/robot/name', 'robot')
     robot_type = rospy.get_param("/robot/type", None)
+    sigint_timeout = rospy.get_param("~sigint_timeout", 15.0)
+    sigterm_timeout = rospy.get_param("~sigterm_timeout", 2.0)
     if robot_type is None:
         rospy.loginfo("The param '/robot/type' is undefined. Using apps for any platforms")
     else:
@@ -95,7 +97,8 @@ def main():
 
     am = app_manager.AppManager(
         robot_name, interface_master, app_list, exchange, plugins,
-        enable_app_replacement=enable_app_replacement)
+        enable_app_replacement=enable_app_replacement,
+        sigint_timeout=sigint_timeout, sigterm_timeout=sigterm_timeout)
 
     rospy.on_shutdown(am.shutdown)
 
