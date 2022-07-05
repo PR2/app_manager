@@ -429,9 +429,18 @@ class AppManager(object):
                         is_core=False, process_listeners=())
                 self._launch._load_config()
             if has_plugin:
-                self._plugin_launch = roslaunch.parent.ROSLaunchParent(
-                    rospy.get_param("/run_id"), plugin_launch_files,
-                    is_core=False, process_listeners=())
+                try:
+                    self._plugin_launch = roslaunch.parent.ROSLaunchParent(
+                        rospy.get_param("/run_id"), plugin_launch_files,
+                        is_core=False, process_listeners=(),
+                        sigint_timeout=self._sigint_timeout,
+                        sigterm_timeout=self._sigterm_timeout)
+                except TypeError:
+                    # ROSLaunchParent() does not have sigint/sigterm_timeout argument
+                    # if roslaunch < 1.14.13 or < 1.15.5
+                    self._plugin_launch = roslaunch.parent.ROSLaunchParent(
+                        rospy.get_param("/run_id"), plugin_launch_files,
+                        is_core=False, process_listeners=())
                 self._plugin_launch._load_config()
 
             #TODO: convert to method
