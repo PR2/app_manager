@@ -106,7 +106,8 @@ Make sure that it founds the apps
 ```
 
 Use service calls to list and start apps.
-```
+
+```bash
 $ rosservice call robot/list_apps
 running_apps: []
 available_apps:
@@ -117,7 +118,12 @@ available_apps:
       format: ''
       data: []
     client_apps: []
-$ rosservice call /robot/start_app app_manager/appA
+
+$ rosservice call /robot/start_app "name: 'app_manager/appA'
+args:
+- key: 'foo'
+  value: 'bar'"
+
 started: True
 error_code: 0
 message: "app [app_manager/appA] started"

@@ -3,6 +3,8 @@
   <arg name="master" default="true" doc="launch master if enabled"/>
   <arg name="master_address" default="localhost" doc="address for app_manager master"/>
   <arg name="master_port" default="11313" doc="port for app_manager master"/>
+  <arg name="sigint_timeout" default="15.0" doc="Time between sending sigint and sending sigterm to ROSLaunchParent"/>
+  <arg name="sigterm_timeout" default="2.0" doc="Time between sending sigterm and sending sigkill to ROSLaunchParent"/>
 
   <!-- app list -->
   <arg name="use_applist" default="false" doc="load apps from applist argument"/>
@@ -30,6 +32,8 @@
       interface_master: http://$(arg master_address):$(arg master_port)
       enable_app_replacement: $(arg enable_app_replacement)
       enable_topic_remapping: $(arg enable_topic_remapping)
+      sigint_timeout: $(arg sigint_timeout)
+      sigterm_timeout: $(arg sigterm_timeout)
     </rosparam>
   </node>
 </launch>

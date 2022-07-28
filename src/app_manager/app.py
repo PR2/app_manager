@@ -38,7 +38,9 @@ import os
 import errno
 import yaml
 
+import roslaunch
 import roslib.names
+import rospkg
 from rospkg import ResourceNotFound
 from .exceptions import AppException, InvalidAppException, NotFoundException, InternalAppException
 
@@ -75,18 +77,19 @@ class Client(object):
                
 class AppDefinition(object):
     __slots__ = ['name', 'display_name', 'description', 'platform',
-                 'launch', 'interface', 'clients', 'icon', 'plugins', 'plugin_order',
+                 'launch', 'run', 'interface', 'clients', 'icon', 'plugins', 'plugin_order',
                  'timeout']
     def __init__(self, name, display_name, description, platform,
-                 launch, interface, clients, icon=None, plugins=None, plugin_order=None,
+                 interface, clients, launch=None, run=None, icon=None, plugins=None, plugin_order=None,
                  timeout=None):
         self.name = name
         self.display_name = display_name
         self.description = description
         self.platform=platform
-        self.launch = launch
         self.interface = interface
         self.clients = clients
+        self.launch = launch
+        self.run = run
         self.icon = icon
         self.plugins = plugins
         self.plugin_order = plugin_order
@@ -109,12 +112,13 @@ class AppDefinition(object):
                self.display_name == other.display_name and \
                self.description == other.description and \
                self.platform == other.platform and \
-               self.launch == other.launch and \
                self.interface == other.interface and \
                self.clients == other.clients and \
+               self.launch == other.launch and \
+               self.run == other.run and \
                self.icon == other.icon
                
-def find_resource(resource):
+def find_resource(resource, rospack=None):
     """
     @return: filepath of resource.  Does not validate if filepath actually exists.
     
@@ -126,7 +130,11 @@ def find_resource(resource):
     p, a = roslib.names.package_resource_name(resource)
     if not p:
         raise ValueError("Resource is missing package name: %s"%(resource))
-    matches = roslib.packages.find_resource(p, a)
+
+    if rospack is None:
+        rospack = rospkg.RosPack()
+    matches = roslib.packages.find_resource(p, a, rospack=rospack)
+
     # TODO: convert ValueError to better type for better error messages
     if len(matches) == 1:
         return matches[0]
@@ -142,24 +150,27 @@ def load_Interface_from_file(filename):
     """
     with open(filename,'r') as f:
         y = yaml.load(f.read())
-        y = y or {} #coerce to dict
-        try:
-            subscribed_topics = y.get('subscribed_topics', {})
-            published_topics = y.get('published_topics', {})
-        except KeyError:
-            raise InvalidAppException("Malformed interface, missing keys")
+    y = y or {} #coerce to dict
+    try:
+        subscribed_topics = y.get('subscribed_topics', {})
+        published_topics = y.get('published_topics', {})
+    except KeyError:
+        raise InvalidAppException("Malformed interface, missing keys")
     return Interface(published_topics=published_topics, subscribed_topics=subscribed_topics)
 
-def _AppDefinition_load_icon_entry(app_data, appfile="UNKNOWN"):
+def _AppDefinition_load_icon_entry(app_data, appfile="UNKNOWN", rospack=None):
     """
     @raise InvalidAppExcetion: if app definition is invalid.
     """
+
+    if rospack is None:
+        rospack = rospkg.RosPack()
     # load/validate launch entry
     try:
         icon_resource = app_data.get('icon', '')
         if icon_resource == '':
             return None
-        icon_filename = find_resource(icon_resource)
+        icon_filename = find_resource(icon_resource, rospack=rospack)
         if not icon_filename or not os.path.exists(icon_filename):
             return None
         return icon_filename
@@ -171,13 +182,18 @@ def _AppDefinition_load_icon_entry(app_data, appfile="UNKNOWN"):
     except ResourceNotFound as e:
         raise InvalidAppException("App file [%s] refers to package that is not installed: %s"%(appfile, str(e)))
 
-def _AppDefinition_load_launch_entry(app_data, appfile="UNKNOWN"):
+def _AppDefinition_load_launch_entry(app_data, appfile="UNKNOWN", rospack=None):
     """
     @raise InvalidAppExcetion: if app definition is invalid.
     """
     # load/validate launch entry
+    if rospack is None:
+        rospack = rospkg.RosPack()
     try:
-        launch = find_resource(app_data['launch'])
+        launch_resource = app_data.get('launch', '')
+        if launch_resource == '':
+            return None
+        launch = find_resource(launch_resource, rospack=rospack)
         if not os.path.exists(launch):
             raise InvalidAppException("Malformed appfile [%s]: refers to launch that does not exist."%(appfile))
         return launch
@@ -188,13 +204,57 @@ def _AppDefinition_load_launch_entry(app_data, appfile="UNKNOWN"):
     except ResourceNotFound as e:
         raise InvalidAppException("App file [%s] refers to package that is not installed: %s"%(appfile, str(e)))
 
-def _AppDefinition_load_interface_entry(app_data, appfile="UNKNOWN"):
+def _AppDefinition_load_run_args_entry(app_data, appfile="UNKNOWN"):
+    """
+    @raise InvalidAppException: if app definition is invalid.
+    """
+    # load/validate launch entry
+    try:
+        run_args = app_data.get('run_args', '')
+        if run_args == '':
+            return None
+        return run_args
+    except ValueError as e:
+        raise InvalidAppException("Malformed appfile [%s]: bad run_args entry: %s"%(appfile, e))
+
+def _AppDefinition_load_run_entry(app_data, appfile="UNKNOWN", rospack=None):
+    """
+    @raise InvalidAppExcetion: if app definition is invalid.
+    """
+    # load/validate run entry
+    if rospack is None:
+        rospack = rospkg.RosPack()
+    try:
+        run_resource = app_data.get('run', '')
+        if run_resource == '':
+            return None
+
+        # check if file exists
+        run = find_resource(run_resource, rospack=rospack)
+        if not os.path.exists(run):
+            raise InvalidAppException("Malformed appfile [%s]: refers to run that does not exist."%(appfile))
+        # create node
+        p, a = roslib.names.package_resource_name(run_resource)
+        args = _AppDefinition_load_run_args_entry(app_data, appfile)
+        node = roslaunch.core.Node(p, a, args=args, output='screen')
+        return node
+    except ValueError as e:
+        raise InvalidAppException("Malformed appfile [%s]: bad run entry: %s"%(appfile, e))
+    except NotFoundException:
+        raise InvalidAppException("App file [%s] refers to run that is not installed"%(appfile))
+    except ResourceNotFound as e:
+        raise InvalidAppException("App file [%s] refers to package that is not installed: %s"%(appfile, str(e)))
+
+def _AppDefinition_load_interface_entry(app_data, appfile="UNKNOWN", rospack=None):
     """
     @raise InvalidAppExcetion: if app definition is invalid.
     """
     # load/validate interface entry
+    if rospack is None:
+        rospack = rospkg.RosPack()
     try:
-        return load_Interface_from_file(find_resource(app_data['interface']))
+        return load_Interface_from_file(
+            find_resource(app_data['interface'], rospack=rospack))
     except IOError as e:
         if e.errno == errno.ENOENT:
             raise InvalidAppException("Malformed appfile [%s]: refers to interface file that does not exist"%(appfile))
@@ -275,50 +335,63 @@ def _AppDefinition_load_timeout_entry(app_data, appfile="UNKNOWN"):
 
 
 
-def load_AppDefinition_from_file(appfile, appname):
+def load_AppDefinition_from_file(appfile, appname, rospack=None):
     """
     @raise InvalidAppExcetion: if app definition is invalid.
     @raise IOError: I/O error reading appfile (e.g. file does not exist).
     """
     with open(appfile,'r') as f:
         app_data = yaml.load(f.read())
-        for reqd in ['launch', 'interface', 'platform']:
-            if not reqd in app_data:
-                raise InvalidAppException("Malformed appfile [%s], missing required key [%s]"%(appfile, reqd))
+    for reqd in ['interface', 'platform']:
+        if not reqd in app_data:
+            raise InvalidAppException("Malformed appfile [%s], missing required key [%s]"%(appfile, reqd))
+    if not 'launch' in app_data and not 'run' in app_data:
+        raise InvalidAppException("Malformed appfile [%s], must have a [launch] or a [run] key"%(appfile))
+    if 'launch' in app_data and 'run' in app_data:
+        raise InvalidAppException("Malformed appfile [%s], cannot have both [launch] and [run] keys"%(appfile))
 
-        display_name = app_data.get('display', appname)
-        description = app_data.get('description', '')        
-        platform = app_data['platform']
+    display_name = app_data.get('display', appname)
+    description = app_data.get('description', '')
+    platform = app_data['platform']
 
-
-        launch = _AppDefinition_load_launch_entry(app_data, appfile)
-        interface = _AppDefinition_load_interface_entry(app_data, appfile)
-        clients = _AppDefinition_load_clients_entry(app_data, appfile)
-        icon = _AppDefinition_load_icon_entry(app_data, appfile)
-        plugins = _AppDefinition_load_plugins_entry(app_data, appfile)
-        plugin_order = _AppDefinition_load_plugin_order_entry(app_data, appfile)
-        timeout = _AppDefinition_load_timeout_entry(app_data, appfile)
+    if rospack is None:
+        rospack = rospkg.RosPack()
+    launch = _AppDefinition_load_launch_entry(
+        app_data, appfile, rospack=rospack)
+    run = _AppDefinition_load_run_entry(
+        app_data, appfile, rospack=rospack)
+    interface = _AppDefinition_load_interface_entry(
+        app_data, appfile, rospack=rospack)
+    clients = _AppDefinition_load_clients_entry(app_data, appfile)
+    icon = _AppDefinition_load_icon_entry(
+        app_data, appfile, rospack=rospack)
+    plugins = _AppDefinition_load_plugins_entry(app_data, appfile)
+    plugin_order = _AppDefinition_load_plugin_order_entry(app_data, appfile)
+    timeout = _AppDefinition_load_timeout_entry(app_data, appfile)
 
     return AppDefinition(appname, display_name, description, platform,
-                         launch, interface, clients, icon,
+                         interface, clients, launch, run, icon,
                          plugins, plugin_order, timeout)
     
-def load_AppDefinition_by_name(appname):
+def load_AppDefinition_by_name(appname, rospack=None):
     """
     @raise InvalidAppExcetion: if app definition is invalid.
     @raise NotFoundExcetion: if app definition is not installed.
     @raise ValueError: if appname is invalid.
     """
+
     if not appname:
         raise ValueError("app name is empty")
 
+    if rospack is None:
+        rospack = rospkg.RosPack()
     try:
-        appfile = find_resource(appname + '.app')
+        appfile = find_resource(appname + '.app', rospack=rospack)
     except ResourceNotFound as e:
         raise NotFoundException("Cannot locate app file for %s: package is not installed."%(appname))
 
     try:
-        return load_AppDefinition_from_file(appfile, appname)
+        return load_AppDefinition_from_file(appfile, appname, rospack=rospack)
     except IOError as e:
         if e.errno == errno.ENOENT:
             raise NotFoundException("Cannot locate app file for %s."%(appname))
