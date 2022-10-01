@@ -44,6 +44,8 @@ else:
 import time
 import yaml
 
+import traceback
+
 import rosgraph.names
 import rospy
 import roslib
@@ -530,6 +532,7 @@ class AppManager(object):
             return StartAppResponse(started=True, message="app [%s] started"%(appname), namespace=self._app_interface)
         
         except Exception as e:
+            rospy.logerr(traceback.format_exc())
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             try:
@@ -748,6 +751,7 @@ class AppManager(object):
                     self._set_current_app(None, None)
 
         except Exception as e:
+            rospy.logerr(traceback.format_exc())
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             rospy.logerr("handle stop app: internal error [%s, line %d: %s]"%(fname, exc_tb.tb_lineno, str(e)))
