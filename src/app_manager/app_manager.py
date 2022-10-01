@@ -339,7 +339,7 @@ class AppManager(object):
 
         try:
             is_main_app = self._current_app is None
-            has_plugin = False
+            has_plugin = not not app.plugins
 
             rospy.loginfo('App: {} main: {} plugins: {}'.format(appname, is_main_app, has_plugin))
             if is_main_app:
@@ -413,7 +413,6 @@ class AppManager(object):
                             .format(app_plugin_type))
 
             #TODO:XXX This is a roslaunch-caller-like abomination.  Should leverage a true roslaunch API when it exists.
-            has_plugin = len(plugin_launch_files) > 0
             if app.launch:
                 try:
                     self._launch = roslaunch.parent.ROSLaunchParent(
