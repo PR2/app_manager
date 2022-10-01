@@ -728,6 +728,7 @@ class AppManager(object):
                 resp.message = "app %s is not running"%(appname)                    
             else:
                 try:
+                    app_status_message = None
                     if self._launch or self._current_process:
                         rosinfo_message = "handle stop app: stopping app [%s]"%(appname)
                         app_status_message = 'stopping %s'%(app.display_name)
@@ -740,12 +741,14 @@ class AppManager(object):
                             app_status_message += "by timeout"
                             resp.message += " by timeout"
                         rospy.loginfo(rosinfo_message)
-                        self._status_pub.publish(AppStatus(AppStatus.INFO, app_status_message))
                     else:
                         rospy.loginfo("handle stop app: app [%s] is not running"%(appname))
                         resp.message = "app [%s] is not running"%(appname)
                         resp.error_code = StatusCodes.NOT_RUNNING
                 finally:
+                    if app_status_message is not None:
+                        self._status_pub.publish(
+                            AppStatus(AppStatus.INFO, app_status_message))
                     self._launch = None
                     self._current_process = None
                     self._set_current_app(None, None)
