@@ -94,10 +94,12 @@ def main():
             sys.exit(1)
 
     enable_app_replacement = rospy.get_param('~enable_app_replacement', True)
+    enable_topic_remapping = rospy.get_param('~enable_topic_remapping', True)
 
     am = app_manager.AppManager(
         robot_name, interface_master, app_list, exchange, plugins,
         enable_app_replacement=enable_app_replacement,
+        enable_topic_remapping=enable_topic_remapping,
         sigint_timeout=sigint_timeout, sigterm_timeout=sigterm_timeout)
 
     rospy.on_shutdown(am.shutdown)
