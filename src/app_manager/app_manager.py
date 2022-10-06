@@ -453,7 +453,7 @@ class AppManager(object):
             if app.run:
                 nodes.append(app.run)
             if self._enable_topic_remapping:
-                for N in self._launch.config.nodes:
+                for N in nodes:
                     for t in app.interface.published_topics.keys():
                         N.remap_args.append((t, self._app_interface + '/' + t))
                     for t in app.interface.subscribed_topics.keys():
