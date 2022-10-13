@@ -328,7 +328,10 @@ class AppManager(object):
         # Only support run apps with no plugins to run in parallel
         # TODO: use multiplexers to enable safe resource sharing
         rospy.loginfo('Current App: {}'.format(self._current_app))
-        if self._current_app and (app.launch or app.plugins):
+        if (self._current_app and
+                (app.launch or app.plugins
+                    or not self._current_app_definition.allow_parallel
+                    or not app.allow_parallel)):
             if self._current_app_definition.name == req.name:
                 return StartAppResponse(started=True, message="app [%s] already started"%(req.name), namespace=self._app_interface)
             elif not self._enable_app_replacement:
