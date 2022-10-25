@@ -23,6 +23,8 @@ def main():
 
     parser.add_argument("--applist", default=None, nargs="*",
                         help="path to applist directories", metavar="PATH")
+    parser.add_argument("--robot-name", default=None, help="robot name")
+    parser.add_argument("--robot-type", default=None, help="robot type")
     args = parser.parse_args(argv[1:])
 
     applist = []
@@ -62,15 +64,23 @@ def main():
             plugin = yaml.safe_load(f)
         plugins += plugin
 
-    robot_name = rospy.get_param('/robot/name', 'robot')
-    robot_type = rospy.get_param("/robot/type", None)
-    sigint_timeout = rospy.get_param("~sigint_timeout", 15.0)
-    sigterm_timeout = rospy.get_param("~sigterm_timeout", 2.0)
+    if args.robot_name is None:
+        robot_name = rospy.get_param('/robot/name', 'robot')
+    else:
+        robot_name = args.robot_name
+
+    if args.robot_type is None:
+        robot_type = rospy.get_param("/robot/type", None)
+    else:
+        robot_type = args.robot_type
+
     if robot_type is None:
         rospy.loginfo("The param '/robot/type' is undefined. Using apps for any platforms")
     else:
         rospy.loginfo("Using apps for platform '%s'" % robot_type)
 
+    sigint_timeout = rospy.get_param("~sigint_timeout", 15.0)
+    sigterm_timeout = rospy.get_param("~sigterm_timeout", 2.0)
     interface_master = rospy.get_param('~interface_master', 'http://localhost:11312')
 
     try:

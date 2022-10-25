@@ -6,9 +6,20 @@
   <arg name="sigint_timeout" default="15.0" doc="Time between sending sigint and sending sigterm to ROSLaunchParent"/>
   <arg name="sigterm_timeout" default="2.0" doc="Time between sending sigterm and sending sigkill to ROSLaunchParent"/>
 
+  <!-- node name -->
+  <arg name="master_node_name" default="appmaster" />
+  <arg name="manager_node_name" default="app_manager" />
   <!-- app list -->
   <arg name="use_applist" default="false" doc="load apps from applist argument"/>
   <arg name="applist" default="" doc="app dirs (space separated)"/>
+
+  <!-- robot_name -->
+  <arg name="use_robot_name" default="false" doc="load robot_name from argument"/>
+  <arg name="robot_name" default="" doc="robot name"/>
+
+  <!-- robot_type -->
+  <arg name="use_robot_type" default="false" doc="load robot_type from argument"/>
+  <arg name="robot_type" default="" doc="robot type"/>
 
   <!-- respawn -->
   <arg name="respawn" default="false" doc="respawn app_manager"/>
@@ -20,13 +31,21 @@
        doc="Enable name remapping of topic written in interface to app_manager namespace , or not" />
 
   <!-- internal use -->
-  <arg name="app_manager_args" default="--applist $(arg applist)" if="$(arg use_applist)"/>
-  <arg name="app_manager_args" default=""                     unless="$(arg use_applist)"/>
+  <arg name="applist_args" default="--applist $(arg applist)" if="$(arg use_applist)"/>
+  <arg name="applist_args" default=""                     unless="$(arg use_applist)"/>
+  <arg name="robot_name_args" default="--robot-name $(arg robot_name)"
+       if="$(arg use_robot_name)"/>
+  <arg name="robot_name_args" default=""
+       unless="$(arg use_robot_name)"/>
+  <arg name="robot_type_args" default="--robot-type $(arg robot_type)"
+       if="$(arg use_robot_type)"/>
+  <arg name="robot_type_args" default=""
+       unless="$(arg use_robot_type)"/>
 
-  <node pkg="app_manager" type="appmaster" name="appmaster"
+  <node pkg="app_manager" type="appmaster" name="$(arg master_node_name)"
         args="-p $(arg master_port)" if="$(arg master)" respawn="$(arg respawn)"/>
-  <node pkg="app_manager" type="app_manager" name="app_manager"
-        args="$(arg app_manager_args)"
+  <node pkg="app_manager" type="app_manager" name="$(arg manager_node_name)"
+        args="$(arg applist_args) $(arg robot_name_args) $(arg robot_type_args)"
         output="screen" respawn="$(arg respawn)">
     <rosparam subst_value="true">
       interface_master: http://$(arg master_address):$(arg master_port)
