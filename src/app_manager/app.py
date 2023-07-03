@@ -218,6 +218,21 @@ def _AppDefinition_load_run_args_entry(app_data, appfile="UNKNOWN"):
     except ValueError as e:
         raise InvalidAppException("Malformed appfile [%s]: bad run_args entry: %s"%(appfile, e))
 
+
+def _AppDefinition_load_run_name_entry(app_data, appfile="UNKNOWN"):
+    """
+    @raise InvalidAppException: if app definition is invalid.
+    """
+    # load/validate launch entry
+    try:
+        run_name = app_data.get('run_name', '')
+        if run_name == '':
+            return None
+        return run_name
+    except ValueError as e:
+        raise InvalidAppException("Malformed appfile [%s]: bad run_name entry: %s"%(appfile, e))
+
+
 def _AppDefinition_load_run_entry(app_data, appfile="UNKNOWN", rospack=None):
     """
     @raise InvalidAppExcetion: if app definition is invalid.
@@ -237,7 +252,8 @@ def _AppDefinition_load_run_entry(app_data, appfile="UNKNOWN", rospack=None):
         # create node
         p, a = roslib.names.package_resource_name(run_resource)
         args = _AppDefinition_load_run_args_entry(app_data, appfile)
-        node = roslaunch.core.Node(p, a, args=args, output='screen')
+        name = _AppDefinition_load_run_name_entry(app_data, appfile)
+        node = roslaunch.core.Node(p, a, name=name, args=args, output='screen')
         return node
     except ValueError as e:
         raise InvalidAppException("Malformed appfile [%s]: bad run entry: %s"%(appfile, e))
