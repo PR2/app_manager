@@ -78,10 +78,10 @@ class Client(object):
 class AppDefinition(object):
     __slots__ = ['name', 'display_name', 'description', 'platform',
                  'launch', 'run', 'interface', 'clients', 'icon', 'plugins', 'plugin_order',
-                 'timeout']
+                 'timeout', 'allow_parallel']
     def __init__(self, name, display_name, description, platform,
                  interface, clients, launch=None, run=None, icon=None, plugins=None, plugin_order=None,
-                 timeout=None):
+                 timeout=None, allow_parallel=True):
         self.name = name
         self.display_name = display_name
         self.description = description
@@ -94,6 +94,7 @@ class AppDefinition(object):
         self.plugins = plugins
         self.plugin_order = plugin_order
         self.timeout = timeout
+        self.allow_parallel = allow_parallel
 
     def __repr__(self):
         d = {}
@@ -334,6 +335,19 @@ def _AppDefinition_load_timeout_entry(app_data, appfile="UNKNOWN"):
         raise InvalidAppException("Malformed appfile [%s]: bad timeout entry: %s"%(appfile, e))
 
 
+def _AppDefinition_load_allow_parallel_entry(app_data, appfile="UNKNOWN"):
+    """
+    @raise InvalidAppException: if app definition is invalid.
+    """
+    # load/validate launch entry
+    try:
+        allow_parallel = app_data.get('allow_parallel', '')
+        if allow_parallel == '':
+            return True
+        return allow_parallel
+    except ValueError as e:
+        raise InvalidAppException("Malformed appfile [%s]: bad allow_parallel entry: %s"%(appfile, e))
+
 
 def load_AppDefinition_from_file(appfile, appname, rospack=None):
     """
@@ -368,10 +382,12 @@ def load_AppDefinition_from_file(appfile, appname, rospack=None):
     plugins = _AppDefinition_load_plugins_entry(app_data, appfile)
     plugin_order = _AppDefinition_load_plugin_order_entry(app_data, appfile)
     timeout = _AppDefinition_load_timeout_entry(app_data, appfile)
+    allow_parallel = _AppDefinition_load_allow_parallel_entry(
+        app_data, appfile)
 
     return AppDefinition(appname, display_name, description, platform,
                          interface, clients, launch, run, icon,
-                         plugins, plugin_order, timeout)
+                         plugins, plugin_order, timeout, allow_parallel)
     
 def load_AppDefinition_by_name(appname, rospack=None):
     """
