@@ -581,8 +581,6 @@ class AppManager(object):
             self._interface_sync = None
 
     def __stop_current(self):
-        if self._api_sync:
-            self._api_sync.stop()
         if self._launch:
             self._launch.shutdown()
             if (self._exit_code is None
